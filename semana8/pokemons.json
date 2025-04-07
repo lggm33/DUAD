@@ -1,0 +1,86 @@
+[
+  {
+    "name": {
+      "english": "Pikachu"
+    },
+    "type": [
+      "Electric"
+    ],
+    "base": {
+      "HP": 35,
+      "Attack": 55,
+      "Defense": 40,
+      "Sp. Attack": 50,
+      "Sp. Defense": 50,
+      "Speed": 90
+    }
+  },
+  {
+    "name": {
+      "english": "Charmander"
+    },
+    "type": [
+      "Fire"
+    ],
+    "base": {
+      "HP": 39,
+      "Attack": 52,
+      "Defense": 43,
+      "Sp. Attack": 60,
+      "Sp. Defense": 50,
+      "Speed": 65
+    }
+  },
+  {
+    "name": {
+      "english": "Squirtle"
+    },
+    "type": [
+      "Water"
+    ],
+    "base": {
+      "HP": 44,
+      "Attack": 48,
+      "Defense": 65,
+      "Sp. Attack": 50,
+      "Sp. Defense": 64,
+      "Speed": 43
+    }
+  },
+  {
+    "nombre": "Bolvasor",
+    "tipo": "Hierva",
+    "base": {
+      "HP": "100",
+      "Attack": "20",
+      "Defense": "80",
+      "Sp. Attack": "20",
+      "Sp. Defense": "10",
+      "Speed": "30"
+    }
+  },
+  {
+    "nombre": "chamander",
+    "tipo": "fuego",
+    "base": {
+      "HP": "100",
+      "Attack": "20",
+      "Defense": "2-",
+      "Sp. Attack": "90",
+      "Sp. Defense": "10",
+      "Speed": "80"
+    }
+  },
+  {
+    "nombre": "charizar",
+    "tipo": "fuego",
+    "base": {
+      "HP": "100",
+      "Attack": "100",
+      "Defense": "100",
+      "Sp. Attack": "100",
+      "Sp. Defense": "100",
+      "Speed": "100"
+    }
+  }
+]

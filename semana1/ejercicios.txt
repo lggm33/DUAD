@@ -1,0 +1,96 @@
+Ejercicios: 
+
+1. Cree un algoritmo para ver un video en Youtube. Sea lo más especifico posible.
+    
+    **1. Inicio.**
+    
+    **2. Si hay internet:**
+    
+    i. Abrir el navegador web.
+    
+    ii. Escribir `www.youtube.com` en la barra de direcciones y presionar Enter.
+    
+    iii. Esperar a que cargue la página.
+    
+    **Sino:**
+    
+    i. Escribir el nombre del video deseado en la barra de búsqueda.
+    
+    iv. Conectarse a una red Wi-Fi o revisar la conexión a internet.
+    
+    **3. Si la página de YouTube cargó correctamente:**
+    
+    i. Presionar Enter.
+    
+    ii. Esperar los resultados.
+    
+    iii. Hacer clic en el video deseado.
+    
+    **Sino:**
+    
+    i. Recargar la página o verificar la conexión nuevamente.
+    
+    **4. Mientras el video no haya terminado:**
+    
+    i. Si hay anuncio:
+    
+       a. Esperar a que termine o hacer clic en "Omitir anuncio" si es posible.
+    
+    ii. Sino:
+    
+       a. Continuar viendo el video.
+    
+    - **Fin.**
+2. Cree un algoritmo que describa su rutina diaria. Use condiciones, condiciones multiples y ciclos.
+    
+    **1 Inicio.**
+    
+    **2 Si es día entre semana:**
+    
+    i. Levantarse a las 7:30 a.m.
+    
+    ii. **Si hay desayuno preparado:**
+    
+    a. Desayunar.
+    
+    **Sino:**
+    
+    b. Preparar desayuno.
+    
+    iii. Bañarse y vestirse.
+    
+    iv. Conectarse al trabajo.
+    
+    v. **Mientras la hora actual sea mayor a las 8:00 a.m. y menor a las 5:00 p.m.:**
+    
+    a. Seguir trabajando o estudiando.
+    
+    vi. Desconectarse del trabajo.
+    
+    vii. **Si hay energía:**
+    
+    a. Hacer ejercicio.
+    
+    **Sino:**
+    
+    b. Descansar un poco.
+    
+    viii. Cenar y prepararse para dormir.
+    
+    ix. Dormir a las 10:30 p.m.
+    
+    **Sino (es fin de semana):**
+    
+    i. Levantarse más tarde (8:30 a.m.).
+    
+    ii. Desayunar tranquilamente.
+    
+    iii. Realizar actividades recreativas (ver una serie, salir, etc.).
+    
+    iv. Hacer tareas del hogar si es necesario.
+    
+    v. Compartir con familia o amigos.
+    
+    vi. Dormir más tarde (11:30 p.m.).
+    
+    - **Fin.**
