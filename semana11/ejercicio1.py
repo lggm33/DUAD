@@ -1,8 +1,11 @@
+import math
+
 class Circle:
-    radius = 10
+    def __init__(self, radius=10):
+        self.radius = radius
 
     def get_area(self):
-        return 3.14 * self.radius ** 2
+        return math.pi * self.radius ** 2
 
     
     
