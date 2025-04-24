@@ -1,4 +1,8 @@
 def bubble_sort(arr):
+
+    if not isinstance(arr, list):
+        raise TypeError("Input must be a list")
+
     n = len(arr)
     total_iteraciones = 0
     
