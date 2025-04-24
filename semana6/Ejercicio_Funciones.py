@@ -90,9 +90,10 @@ def is_prime(number):
     return True  # Si no tiene divisores, es primo
 
 def prime_filter(numbers):
+    result = []
     for number in numbers:
         if is_prime(number):
-            is_prime_list.append(number)
-    return is_prime_list
+            result.append(number)
+    return result
 
 print(prime_filter(number_list))
