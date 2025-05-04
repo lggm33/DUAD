@@ -1,8 +1,9 @@
 import csv
 import os
 import FreeSimpleGUI as sg
+from typing import List, Dict, Any, Tuple, Optional
 
-def import_transactions_csv_file():
+def import_transactions_csv_file() -> List[Dict[str, Any]]:
     """Import transactions from a CSV file"""
     
     if not os.path.exists("transactions.csv"):
@@ -40,7 +41,7 @@ def import_transactions_csv_file():
                 print(f"Could not delete the file: {e}")
         return []
 
-def export_transactions_csv_file(transactions):
+def export_transactions_csv_file(transactions: List[Dict[str, Any]]) -> None:
     """Export transactions to a CSV file"""
     if not transactions:
         print("No transactions to export")
@@ -60,7 +61,7 @@ def export_transactions_csv_file(transactions):
     except Exception as e:
         print(f"Error exporting transactions: {e}")
 
-def import_categories_file():
+def import_categories_file() -> List[str]:
     """Import categories from a text file"""
     
     categories = []
@@ -89,7 +90,7 @@ def import_categories_file():
                 print(f"Could not delete the file: {e}")
         return []
 
-def export_categories_file(categories):
+def export_categories_file(categories: List[str]) -> None:
     """Export categories to a text file"""
     
     try:
@@ -99,22 +100,24 @@ def export_categories_file(categories):
     except Exception as e:
         print(f"Error exporting categories: {e}")
 
-def init_process():
+def init_process() -> Tuple[List, List]:
     """Initialize the process"""
+    # Import raw data
+    transactions_data = import_transactions_csv_file()
+    categories_data = import_categories_file()
 
-    transactions = import_transactions_csv_file()
-    categories = import_categories_file()
-
-    if len(transactions) == 0:
+    # Convert to Transaction and Category objects in main.py 
+    # to avoid circular imports
+    if len(transactions_data) == 0:
         print("First time running the program")
-        export_transactions_csv_file(transactions)
-        return transactions, categories
+        export_transactions_csv_file([])
+        return transactions_data, categories_data
     
     else:
         print("Transactions already exist")
-        return transactions, categories
+        return transactions_data, categories_data
 
-def ask_add_transactions_examples():
+def ask_add_transactions_examples() -> Tuple[List[Dict[str, Any]], List[str]]:
     """Add transactions examples to the transactions list and default categories"""
 
     transactions = [

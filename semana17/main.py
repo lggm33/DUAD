@@ -1,13 +1,26 @@
 import FreeSimpleGUI as sg
-import datetime
+from typing import List
 
 # Import modules
 from data_manager import init_process, export_transactions_csv_file, export_categories_file, ask_add_transactions_examples
 from gui_windows import create_category_window, create_transaction_window
-from models import add_transaction
+from models import Transaction, Category, add_transaction
 
 def main():
-    transactions, categories = init_process()
+    # Get raw data from files
+    transactions_data, categories_data = init_process()
+    
+    # Convert raw data to objects
+    transactions: List[Transaction] = []
+    categories: List[Category] = []
+    
+    # Convert transactions data to Transaction objects
+    for t_data in transactions_data:
+        transactions.append(Transaction.from_dict(t_data))
+    
+    # Convert categories data to Category objects
+    for c_name in categories_data:
+        categories.append(Category.from_str(c_name))
 
     ask_add_examples_transaction_column = sg.Column([
         [sg.Text("Not previous data found")],
@@ -49,7 +62,7 @@ def main():
     
     first_time = True
     print(transactions)
-    print(f"Available categories: {categories}")
+    print(f"Available categories: {[c.name for c in categories]}")
 
     # Show question column if it's the first time and there are no transactions
     if first_time and len(transactions) == 0:
@@ -61,7 +74,7 @@ def main():
         window["-ADD-INCOME-"].update(visible=True)
         # Show existing transactions in the table
         if transactions:
-            table_data = [[t["date"], t["description"], t["amount"], t["category"], t["type"]] for t in transactions]
+            table_data = [[t.date, t.description, t.amount, t.category, t.type_] for t in transactions]
             window["-TABLE-"].update(values=table_data)
 
     while True:
@@ -74,7 +87,12 @@ def main():
         if first_time and len(transactions) == 0:
             if event == "Yes":
                 print("Yes")
-                transactions, categories = ask_add_transactions_examples()
+                transactions_data, categories_data = ask_add_transactions_examples()
+                
+                # Convert the example data to objects
+                transactions = [Transaction.from_dict(t_data) for t_data in transactions_data]
+                categories = [Category.from_str(c_name) for c_name in categories_data]
+                
                 first_time = False
                 window["-ASK-ADD-EXAMPLES-TRANSACTION-COLUMN-"].update(visible=False)
                 window["-TABLE-"].update(visible=True)
@@ -82,7 +100,7 @@ def main():
                 window["-ADD-EXPENSE-"].update(visible=True)
                 window["-ADD-INCOME-"].update(visible=True)
                 # Update the table with added transactions
-                table_data = [[t["date"], t["description"], t["amount"], t["category"], t["type"]] for t in transactions]
+                table_data = [[t.date, t.description, t.amount, t.category, t.type_] for t in transactions]
                 window["-TABLE-"].update(values=table_data)
             elif event == "No":
                 print("No")
@@ -98,7 +116,7 @@ def main():
                 
         if event == "-ADD-CATEGORY-":
             categories = create_category_window(categories)
-            print(f"Updated categories: {categories}")
+            print(f"Updated categories: {[c.name for c in categories]}")
             
         if event == "-ADD-EXPENSE-" or event == "-ADD-INCOME-":
             # Check if there are categories before allowing to add transactions
@@ -115,7 +133,7 @@ def main():
             new_transaction = create_transaction_window(transaction_type, categories)
             if new_transaction:
                 transactions = add_transaction(transactions, new_transaction)
-                table_data = [[t["date"], t["description"], t["amount"], t["category"], t["type"]] for t in transactions]
+                table_data = [[t.date, t.description, t.amount, t.category, t.type_] for t in transactions]
                 window["-TABLE-"].update(values=table_data)
 
     window.close()
