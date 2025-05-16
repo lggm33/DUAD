@@ -1,0 +1,31 @@
+GET http://localhost:5000/tasks
+
+###
+
+POST http://localhost:5000/tasks/add
+Content-Type: application/json
+
+{
+    "title": "Task 1",
+    "description": "Description 1",
+    "state": "Por Hacer"
+}
+
+###
+
+DELETE http://localhost:5000/tasks/delete/9
+
+###
+
+PATCH http://localhost:5000/tasks/update/5
+Content-Type: application/json
+
+{
+    "title": "Task 5555",
+    "description": "Description 5555",
+    "state": "En Progreso"
+}
+
+###
+
+PATCH http://localhost:5000/tasks/update/5
