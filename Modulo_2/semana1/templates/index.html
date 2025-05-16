@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Task Manager API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+        }
+        .routes {
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        .route {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Task Manager API</h1>
+    <p>Welcome to the index page</p>
+    <div class="routes">
+        <h2>Available routes for Tasks:</h2>
+        <div class="route"><a href="/tasks">/tasks</a> → List all tasks</div>
+        <div class="route"><a href="/tasks/add">/tasks/add</a> → Add a new task</div>
+        <div class="route"><a href="/tasks/delete">/tasks/delete/&lt;int:task_id&gt;</a> → Delete a task</div>
+        <div class="route"><a href="/tasks/update">/tasks/update/&lt;int:task_id&gt;</a> → Update a task</div>
+    </div>
+</body>
+</html> 
