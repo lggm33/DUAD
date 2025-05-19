@@ -93,7 +93,7 @@
     
     <div class="json-example">
     <pre>
-DELETE /tasks/delete/{task_id}
+DELETE /tasks?id={task_id}
     </pre>
     </div>
 
@@ -114,19 +114,14 @@ DELETE /tasks/delete/{task_id}
 
         <div class="right-column">
             <h2>Delete Task</h2>
-            {% if task_id %}
+            {% if deleted_task %}
             <!-- Form when we already have a task_id -->
-            <form action="/tasks/delete/{{ task_id }}" method="POST">
-                <input type="hidden" name="_method" value="DELETE">
-                <div class="task-info">
-                    <p><strong>Are you sure you want to delete task with ID: {{ task_id }}?</strong></p>
-                </div>
-                <a href="/tasks" class="btn-cancel">Cancel</a>
-                <button type="submit">Confirm Delete</button>
-            </form>
+            <p>Task deleted successfully</p>
+            <p>{{ deleted_task }}</p>
             {% else %}
             <!-- Form to enter a task_id -->
-            <form action="/tasks/delete_by_id" method="POST">
+            <form action="/tasks" method="POST">
+                <input type="hidden" name="_method" value="DELETE">
                 <div>
                     <label for="task_id">Task ID to delete:</label>
                     <input type="text" id="task_id" name="task_id" required>

@@ -64,6 +64,7 @@
     
     <div class="json-example">
     <pre>
+POST /tasks
 {
     "title": "string",
     "description": "string",
@@ -91,7 +92,11 @@
 
         <div class="right-column">
             <h2>Create New Task</h2>
-            <form action="/tasks/add" method="POST">
+            {% if task_id %}
+            <p>Task created successfully with ID: {{ task_id }}</p>
+            <a href="/tasks" class="btn-cancel">Go to Tasks</a>
+            {% endif %}
+            <form action="/tasks" method="POST">
                 <div>
                     <label for="title">Title:</label>
                     <input type="text" id="title" name="title" required>

@@ -28,13 +28,12 @@ class Task:
         bool: True if data is valid, False otherwise
     """
     # Check if all required fields are present
-    required_fields = ["id", "title", "description", "state"]
+    required_fields = ["title", "description", "state"]
     if not all(field in data for field in required_fields):
       return False
       
     # Validate data types
-    if not isinstance(data["id"], int):
-      return False
+
     if not isinstance(data["title"], str):
       return False
     if not isinstance(data["description"], str):
