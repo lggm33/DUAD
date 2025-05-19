@@ -74,7 +74,7 @@ GET /tasks
 
 ### Add a task
 ```
-POST /tasks/add
+POST /tasks
 Content-Type: application/json
 
 {
@@ -86,10 +86,11 @@ Content-Type: application/json
 
 ### Update a task
 ```
-PATCH /tasks/update/{id}
+PATCH /tasks
 Content-Type: application/json
 
 {
+    "task_id": 1,
     "title": "New title",
     "description": "New description",
     "state": "En Progreso"
@@ -98,7 +99,12 @@ Content-Type: application/json
 
 ### Delete a task
 ```
-DELETE /tasks/delete/{id}
+DELETE /tasks
+Content-Type: application/json
+
+{
+    "id": 1
+}
 ```
 
 ## Testing with API.HTTP
@@ -107,4 +113,4 @@ The `api.http` file contains example requests that can be executed with extensio
 
 ## Storage
 
-Tasks are stored in a JSON file called `tasks.json` in the application's root directory. If the file doesn't exist, it will be created automatically when adding the first task. 
+Tasks are stored in a JSON file called `tasks.json` in the application's root directory. If the file doesn't exist, it will be created automatically when adding the first task.
