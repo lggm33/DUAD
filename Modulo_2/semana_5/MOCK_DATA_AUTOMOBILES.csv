@@ -1,0 +1,51 @@
+id,make,model,year_manufactured,condition
+1,Isuzu,Rodeo Sport,2003,available
+2,Mazda,323,1993,maintenance
+3,Lincoln,Mark LT,2007,available
+4,Volkswagen,CC,2013,maintenance
+5,Chevrolet,Suburban 2500,2000,maintenance
+6,Lexus,IS F,2009,maintenance
+7,Maybach,57,2004,maintenance
+8,Lexus,SC,2007,available
+9,Pontiac,Firebird,1995,available
+10,Mercedes-Benz,W201,1991,maintenance
+11,Ford,Mustang,1987,maintenance
+12,Hyundai,Tiburon,1998,maintenance
+13,Toyota,Highlander,2011,available
+14,Maserati,Quattroporte,2011,available
+15,Mercedes-Benz,E-Class,2007,maintenance
+16,Isuzu,i-370,2008,available
+17,Rolls-Royce,Phantom,2012,available
+18,Ford,Econoline E250,1997,maintenance
+19,Ford,Laser,1987,maintenance
+20,Chevrolet,Corvette,1992,available
+21,Mazda,B-Series Plus,1998,available
+22,Ford,Escort,1997,available
+23,Volvo,V70,2007,maintenance
+24,Lamborghini,Countach,1990,maintenance
+25,Maybach,62,2012,maintenance
+26,Isuzu,Trooper,1996,maintenance
+27,Mercedes-Benz,SL-Class,1999,available
+28,Buick,Lucerne,2009,maintenance
+29,Pontiac,Grand Prix,1970,available
+30,Acura,RL,2008,available
+31,Volkswagen,Cabriolet,1995,maintenance
+32,Toyota,Sienna,1998,available
+33,Buick,Terraza,2007,available
+34,Mercedes-Benz,S-Class,2005,maintenance
+35,Ford,Laser,1986,maintenance
+36,Dodge,Avenger,1996,maintenance
+37,Dodge,Dakota,1999,maintenance
+38,Mercedes-Benz,SLR McLaren,2009,available
+39,Chrysler,Crossfire,2005,maintenance
+40,Buick,Skyhawk,1986,available
+41,Kia,Rio,2003,maintenance
+42,Mercury,Sable,1996,maintenance
+43,Saturn,L-Series,2003,maintenance
+44,Ford,Thunderbird,1989,available
+45,Infiniti,IPL G,2012,available
+46,Audi,4000,1987,available
+47,Land Rover,LR4,2010,maintenance
+48,Ford,Windstar,1997,available
+49,Chevrolet,Malibu,2005,maintenance
+50,Ferrari,F430 Spider,2006,maintenance
