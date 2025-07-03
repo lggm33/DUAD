@@ -1,0 +1,346 @@
+###
+# Lyfter Car Rental API - Test Endpoints
+# Compatible with VS Code REST Client, IntelliJ HTTP Client, etc.
+# Make sure the server is running: python main.py
+###
+
+# Variables
+@baseUrl = http://localhost:8000
+@contentType = application/json
+
+### ============================================================================
+### HEALTH CHECK & ROOT
+### ============================================================================
+
+### Get API Root
+GET {{baseUrl}}/
+
+### Health Check
+GET {{baseUrl}}/health
+
+### ============================================================================
+### USER ENDPOINTS
+### ============================================================================
+
+### Create User
+POST {{baseUrl}}/users
+Content-Type: {{contentType}}
+
+{
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "username": "johndoe",
+  "password": "secretpassword123",
+  "date_of_birth": "1990-05-15",
+  "account_state": true
+}
+
+### Create Another User
+POST {{baseUrl}}/users
+Content-Type: {{contentType}}
+
+{
+  "name": "Jane Smith",
+  "email": "jane.smith@example.com",
+  "username": "janesmith",
+  "password": "password456",
+  "date_of_birth": "1985-12-03",
+  "account_state": true
+}
+
+### List All Users
+GET {{baseUrl}}/users
+
+### List Users with Filters
+GET {{baseUrl}}/users?username=john&limit=10&offset=0
+
+### List Users by Email Filter
+GET {{baseUrl}}/users?email=jane&account_state=true
+
+### Get User by ID
+GET {{baseUrl}}/users/1
+
+### Update User Status
+PUT {{baseUrl}}/users/1/status
+Content-Type: {{contentType}}
+
+{
+  "account_state": false
+}
+
+### Get User Statistics
+GET {{baseUrl}}/users/stats/summary
+
+### Delete User (uncomment to test)
+DELETE {{baseUrl}}/users/2
+
+### ============================================================================
+### AUTOMOBILE ENDPOINTS
+### ============================================================================
+
+### Create Automobile
+POST {{baseUrl}}/automobiles
+Content-Type: {{contentType}}
+
+{
+  "make": "Toyota",
+  "model": "Camry",
+  "year_manufactured": 2022,
+  "condition": "Excellent",
+  "status": "available"
+}
+
+### Create Another Automobile
+POST {{baseUrl}}/automobiles
+Content-Type: {{contentType}}
+
+{
+  "make": "Honda",
+  "model": "Civic",
+  "year_manufactured": 2021,
+  "condition": "Good",
+  "status": "available"
+}
+
+### Create BMW
+POST {{baseUrl}}/automobiles
+Content-Type: {{contentType}}
+
+{
+  "make": "BMW",
+  "model": "X5",
+  "year_manufactured": 2023,
+  "condition": "Excellent",
+  "status": "available"
+}
+
+### List All Automobiles
+GET {{baseUrl}}/automobiles
+
+### List Automobiles with Filters
+GET {{baseUrl}}/automobiles?make=Toyota&year=2022
+
+### List Available Automobiles Only
+GET {{baseUrl}}/automobiles?available_only=true
+
+### Get Available Automobiles (Dedicated Endpoint)
+GET {{baseUrl}}/automobiles/available
+
+### Get Rented Automobiles
+GET {{baseUrl}}/automobiles/rented
+
+### Get Automobile by ID
+GET {{baseUrl}}/automobiles/1
+
+### Update Automobile Status to Rented
+PUT {{baseUrl}}/automobiles/1/status
+Content-Type: {{contentType}}
+
+{
+  "status": "rented"
+}
+
+### Update Automobile Status to Maintenance
+PUT {{baseUrl}}/automobiles/2/status
+Content-Type: {{contentType}}
+
+{
+  "status": "maintenance"
+}
+
+### Disable Automobile (Set to Retired)
+PUT {{baseUrl}}/automobiles/3/disable
+
+### Get Automobile Statistics
+GET {{baseUrl}}/automobiles/stats/summary
+
+### Get Makes and Models
+GET {{baseUrl}}/automobiles/brands/models
+
+### Delete Automobile (uncomment to test)
+DELETE {{baseUrl}}/automobiles/3
+
+### ============================================================================
+### RENTAL ENDPOINTS
+### ============================================================================
+
+### Create Rental
+POST {{baseUrl}}/rentals
+Content-Type: {{contentType}}
+
+{
+  "user_id": 1,
+  "automobile_id": 46,
+  "expected_return_date": "2025-12-31",
+  "daily_rate": 45.00,
+  "total_cost": 315.00
+}
+
+### Create Another Rental
+POST {{baseUrl}}/rentals
+Content-Type: {{contentType}}
+
+{
+  "user_id": 2,
+  "automobile_id": 3,
+  "expected_return_date": "2025-12-25",
+  "daily_rate": 65.00,
+  "total_cost": 390.00
+}
+
+### List All Rentals
+GET {{baseUrl}}/rentals
+
+### List Rentals with Filters
+GET {{baseUrl}}/rentals?user_id=1&status=active
+
+### List Rentals by Date Range
+GET {{baseUrl}}/rentals?date_from=2025-01-01&date_to=2025-12-31
+
+### Get Active Rentals
+GET {{baseUrl}}/rentals/active
+
+### Get Overdue Rentals
+GET {{baseUrl}}/rentals/overdue
+
+### Get Rental by ID
+GET {{baseUrl}}/rentals/1
+
+### Complete Rental (Return Car)
+PUT {{baseUrl}}/rentals/8/complete
+Content-Type: {{contentType}}
+
+{
+  "actual_return_date": "2024-12-15T14:30:00"
+}
+
+### Complete Rental (No specific return date - uses current time)
+PUT {{baseUrl}}/rentals/15/complete
+Content-Type: {{contentType}}
+
+{}
+
+### Get Rental Statistics
+GET {{baseUrl}}/rentals/stats/summary
+
+### Delete Rental (only works for completed/cancelled rentals)
+# DELETE {{baseUrl}}/rentals/1
+
+### ============================================================================
+### COMPLEX SCENARIOS
+### ============================================================================
+
+### Create User, Car, and Rental in Sequence
+POST {{baseUrl}}/users
+Content-Type: {{contentType}}
+
+{
+  "name": "Michael Johnson",
+  "email": "michael.j@example.com",
+  "username": "mikej",
+  "password": "mike123",
+  "date_of_birth": "1988-03-20",
+  "account_state": true
+}
+
+###
+POST {{baseUrl}}/automobiles
+Content-Type: {{contentType}}
+
+{
+  "make": "Ford",
+  "model": "Mustang",
+  "year_manufactured": 2023,
+  "condition": "Excellent",
+  "status": "available"
+}
+
+###
+POST {{baseUrl}}/rentals
+Content-Type: {{contentType}}
+
+{
+  "user_id": 3,
+  "automobile_id": 4,
+  "expected_return_date": "2024-12-30",
+  "daily_rate": 75.00,
+  "total_cost": 525.00
+}
+
+### ============================================================================
+### ERROR TESTING
+### ============================================================================
+
+### Try to Create User with Duplicate Email
+POST {{baseUrl}}/users
+Content-Type: {{contentType}}
+
+{
+  "name": "Duplicate User",
+  "email": "john.doe@example.com",
+  "username": "duplicateuser",
+  "password": "password123"
+}
+
+### Try to Get Non-existent User
+GET {{baseUrl}}/users/999
+
+### Try to Rent Non-existent Car
+POST {{baseUrl}}/rentals
+Content-Type: {{contentType}}
+
+{
+  "user_id": 1,
+  "automobile_id": 999,
+  "expected_return_date": "2024-12-31",
+  "daily_rate": 50.00,
+  "total_cost": 350.00
+}
+
+### Try to Rent Already Rented Car
+POST {{baseUrl}}/rentals
+Content-Type: {{contentType}}
+
+{
+  "user_id": 2,
+  "automobile_id": 1,
+  "expected_return_date": "2024-12-31",
+  "daily_rate": 50.00,
+  "total_cost": 350.00
+}
+
+### ============================================================================
+### FILTERING TESTING
+### ============================================================================
+
+### Filter Users by Account State
+GET {{baseUrl}}/users?account_state=true
+
+### Filter Automobiles by Make
+GET {{baseUrl}}/automobiles?make=Toyota
+
+### Filter Automobiles by Year Range
+GET {{baseUrl}}/automobiles?year=2022
+
+### Filter Rentals by Status
+GET {{baseUrl}}/rentals?status=active
+
+
+### ============================================================================
+### NOTES
+### ============================================================================
+
+# To use this file:
+# 1. Install VS Code REST Client extension
+# 2. Make sure your server is running: python main.py
+# 3. Click "Send Request" above each request
+# 4. Update IDs in the requests based on your actual data
+# 5. Some DELETE requests are commented out - uncomment carefully
+
+# Expected workflow:
+# 1. Create users first
+# 2. Create automobiles
+# 3. Create rentals (using valid user_id and automobile_id)
+# 4. Test other operations
+# 5. Complete rentals
+# 6. Test statistics and filtering 
