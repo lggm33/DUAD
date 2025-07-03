@@ -13,18 +13,14 @@ import subprocess
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from dotenv import load_dotenv
+from .database_config import DatabaseConfig
 
 # Load environment variables
 load_dotenv()
 
-class DatabaseSetup:
+class DatabaseSetup(DatabaseConfig):
     def __init__(self):
-        self.host = os.getenv('DB_HOST', 'localhost')
-        self.port = os.getenv('DB_PORT', '5432')
-        self.user = os.getenv('DB_USER', 'postgres')
-        self.password = os.getenv('DB_PASSWORD', '')
-        self.db_name = os.getenv('DB_NAME', 'lyfter_car_rental')
-        self.schema_name = os.getenv('DB_SCHEMA', 'lyfter_car_rental')
+        super().__init__()
 
     def check_postgresql_installed(self):
         """Verifies if PostgreSQL is installed on the system"""
@@ -45,14 +41,8 @@ class DatabaseSetup:
         print("🔍 Checking if PostgreSQL is running...")
         
         try:
-            # Try to connect to PostgreSQL server
-            conn = psycopg2.connect(
-                host=self.host,
-                port=self.port,
-                user=self.user,
-                password=self.password,
-                database='postgres'  # Default database
-            )
+            # Use inherited method to connect to PostgreSQL server
+            conn = self.get_postgres_connection()
             conn.close()
             print("✅ PostgreSQL is running and accessible")
             return True
@@ -65,111 +55,77 @@ class DatabaseSetup:
         print(f"🗄️  Creating database '{self.db_name}'...")
         
         try:
-            # Connect to default database to create new DB
-            conn = psycopg2.connect(
-                host=self.host,
-                port=self.port,
-                user=self.user,
-                password=self.password,
-                database='postgres'
-            )
-            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-            cursor = conn.cursor()
+            # Use inherited method for connection with autocommit
+            with self.get_connection(database='postgres', autocommit=True) as conn:
+                with self.get_cursor(conn) as cursor:
+                    # Check if database already exists
+                    cursor.execute(
+                        "SELECT 1 FROM pg_catalog.pg_database WHERE datname = %s",
+                        (self.db_name,)
+                    )
+                    
+                    if cursor.fetchone():
+                        print(f"✅ Database '{self.db_name}' already exists")
+                    else:
+                        # Create the database
+                        cursor.execute(f'CREATE DATABASE "{self.db_name}"')
+                        print(f"✅ Database '{self.db_name}' created successfully")
             
-            # Check if database already exists
-            cursor.execute(
-                "SELECT 1 FROM pg_catalog.pg_database WHERE datname = %s",
-                (self.db_name,)
-            )
-            
-            if cursor.fetchone():
-                print(f"✅ Database '{self.db_name}' already exists")
-            else:
-                # Create the database
-                cursor.execute(f'CREATE DATABASE "{self.db_name}"')
-                print(f"✅ Database '{self.db_name}' created successfully")
-            
-            cursor.close()
-            conn.close()
             return True
             
         except psycopg2.Error as e:
-            print(f"⚠️  Warning creating database: {e}")
-            print("✅ Continuing with setup...")
-            return True  # Continue even if there's an error
+            return self.handle_setup_error(e, "creating database")
 
     def create_schema(self):
         """Creates the project schema"""
         print(f"📂 Creating schema '{self.schema_name}'...")
         
         try:
-            # Connect to project database
-            conn = psycopg2.connect(
-                host=self.host,
-                port=self.port,
-                user=self.user,
-                password=self.password,
-                database=self.db_name
-            )
-            cursor = conn.cursor()
+            # Use inherited method for connection
+            with self.get_connection() as conn:
+                with self.get_cursor(conn) as cursor:
+                    # Create schema if it doesn't exist
+                    cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{self.schema_name}"')
+                    conn.commit()
+                    
+                    print(f"✅ Schema '{self.schema_name}' created successfully")
             
-            # Create schema if it doesn't exist
-            cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{self.schema_name}"')
-            conn.commit()
-            
-            print(f"✅ Schema '{self.schema_name}' created successfully")
-            
-            cursor.close()
-            conn.close()
             return True
             
         except psycopg2.Error as e:
-            print(f"⚠️  Warning creating schema: {e}")
-            print("✅ Continuing with setup...")
-            return True  # Continue even if there's an error
+            return self.handle_setup_error(e, "creating schema")
 
     def test_connection(self):
         """Tests connection to the created database and schema"""
         print("🧪 Testing final connection...")
         
         try:
-            conn = psycopg2.connect(
-                host=self.host,
-                port=self.port,
-                user=self.user,
-                password=self.password,
-                database=self.db_name
-            )
-            cursor = conn.cursor()
-            
-            # Verify schema exists
-            cursor.execute(
-                "SELECT schema_name FROM information_schema.schemata WHERE schema_name = %s",
-                (self.schema_name,)
-            )
-            
-            if cursor.fetchone():
-                print("✅ Successful connection - Database and schema configured correctly")
-                
-                # Show connection information
-                cursor.execute("SELECT version()")
-                version_result = cursor.fetchone()
-                if version_result:
-                    print(f"📊 PostgreSQL version: {version_result[0]}")
-                else:
-                    print("📊 PostgreSQL version: Not available")
-                
-                cursor.close()
-                conn.close()
-                return True
-            else:
-                print(f"❌ Schema '{self.schema_name}' not found")
-                return False
+            with self.get_connection() as conn:
+                with self.get_cursor(conn) as cursor:
+                    # Verify schema exists
+                    cursor.execute(
+                        "SELECT schema_name FROM information_schema.schemata WHERE schema_name = %s",
+                        (self.schema_name,)
+                    )
+                    
+                    if cursor.fetchone():
+                        print("✅ Successful connection - Database and schema configured correctly")
+                        
+                        # Show connection information
+                        cursor.execute("SELECT version()")
+                        version_result = cursor.fetchone()
+                        if version_result:
+                            print(f"📊 PostgreSQL version: {version_result[0]}")
+                        else:
+                            print("📊 PostgreSQL version: Not available")
+                        
+                        return True
+                    else:
+                        print(f"❌ Schema '{self.schema_name}' not found")
+                        return False
                 
         except psycopg2.Error as e:
-            print(f"⚠️  Warning in connection test: {e}")
-            print("✅ Continuing with setup...")
-            return True  # Continue even if there's an error
+            return self.handle_setup_error(e, "connection test")
 
     def setup(self):
         """Executes database and schema setup"""

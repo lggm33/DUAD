@@ -12,54 +12,28 @@ import psycopg2
 import random
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+from .database_config import DatabaseConfig
 
 # Load environment variables
 load_dotenv()
 
-class RentalsSetup:
+class RentalsSetup(DatabaseConfig):
     def __init__(self):
-        self.host = os.getenv('DB_HOST', 'localhost')
-        self.port = os.getenv('DB_PORT', '5432')
-        self.user = os.getenv('DB_USER', 'postgres')
-        self.password = os.getenv('DB_PASSWORD', '')
-        self.db_name = os.getenv('DB_NAME', 'lyfter_car_rental')
-        self.schema_name = os.getenv('DB_SCHEMA', 'lyfter_car_rental')
+        super().__init__()
 
     def create_rentals_table(self):
         """Creates the rentals table if it doesn't exist"""
         print("🚙 Checking/creating rentals table...")
         
         try:
-            conn = psycopg2.connect(
-                host=self.host,
-                port=int(self.port),
-                user=self.user,
-                password=self.password,
-                database=self.db_name
-            )
-            cursor = conn.cursor()
-            
-            # First check if table already exists
-            cursor.execute("""
-                SELECT EXISTS (
-                    SELECT FROM information_schema.tables 
-                    WHERE table_schema = %s 
-                    AND table_name = 'rentals'
-                );
-            """, (self.schema_name,))
-            
-            result = cursor.fetchone()
-            table_exists = result[0] if result else False
-            
-            if table_exists:
+            # Check if table already exists using inherited method
+            if self.table_exists('rentals'):
                 print("✅ Rentals table already exists, skipping creation")
-                cursor.close()
-                conn.close()
                 return True
             
-            # Create rentals table with foreign keys and additional data
+            # Create rentals table with foreign keys and additional data using inherited methods
             create_table_sql = f"""
-            CREATE TABLE "{self.schema_name}".rentals (
+            CREATE TABLE {self.get_qualified_table_name('rentals')} (
                 id SERIAL PRIMARY KEY,
                 user_id INTEGER NOT NULL,
                 automobile_id INTEGER NOT NULL,
@@ -75,31 +49,28 @@ class RentalsSetup:
                 -- Foreign key constraints
                 CONSTRAINT fk_rental_user 
                     FOREIGN KEY (user_id) 
-                    REFERENCES "{self.schema_name}".users(id) 
+                    REFERENCES {self.get_qualified_table_name('users')}(id) 
                     ON DELETE CASCADE,
                     
                 CONSTRAINT fk_rental_automobile 
                     FOREIGN KEY (automobile_id) 
-                    REFERENCES "{self.schema_name}".automobiles(id) 
+                    REFERENCES {self.get_qualified_table_name('automobiles')}(id) 
                     ON DELETE CASCADE
             );
             """
             
-            cursor.execute(create_table_sql)
+            with self.get_connection() as conn:
+                with self.get_cursor(conn) as cursor:
+                    cursor.execute(create_table_sql)
+                    conn.commit()
+                    
+                    print("✅ Rentals table created successfully")
+                    print("✅ Foreign key constraints added")
             
-            conn.commit()
-            
-            print("✅ Rentals table created successfully")
-            print("✅ Foreign key constraints added")
-            
-            cursor.close()
-            conn.close()
             return True
             
         except psycopg2.Error as e:
-            print(f"⚠️  Warning creating rentals table: {e}")
-            print("✅ Continuing with setup...")
-            return True  # Continue even if there's an error
+            return self.handle_setup_error(e, "creating rentals table")
 
     def populate_rentals_table(self):
         """Populates rentals table with sample rental data"""
