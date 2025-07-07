@@ -13,4 +13,11 @@ htmlcov/
 .installed.cfg
 *.egg
 
+.env
+
 ###
+CLAUDE.md
+
+# Virtual Environment
+venv/
+
