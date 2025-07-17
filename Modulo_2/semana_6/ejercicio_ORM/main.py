@@ -1,36 +1,32 @@
 # Import all necessary modules
-from database_config import validate_sqlalchemy_setup
+from database_config import validate_sqlalchemy_setup, session_scope
 from database_setup import setup_database
 from user_manager import UserManager
 from address_manager import AddressManager
 from automobile_manager import AutomobileManager
+from models import User, Address, Automobile
 
 # Demo functions
 def clean_database():
     """Clean all data from the database for demo purposes"""
     print("\nCleaning database for demo...")
     
-    # Initialize managers
-    user_manager = UserManager()
-    address_manager = AddressManager()
-    automobile_manager = AutomobileManager()
-    
-    # Delete all existing data
-    for automobile in automobile_manager.get_all_automobiles():
-        automobile_manager.delete_automobile(automobile.id)
-    
-    for address in address_manager.get_all_addresses():
-        address_manager.delete_address(address.id)
-    
-    for user in user_manager.get_all_users():
-        user_manager.delete_user(user.id)
+    # Use a single session for all cleanup operations
+    with session_scope() as session:
+        # Delete all existing data in the correct order (to respect foreign key constraints)
+        # First automobiles (they reference users)
+        automobiles_deleted = session.query(Automobile).delete()
+        print(f"Deleted {automobiles_deleted} automobiles")
+        
+        # Then addresses (they reference users)
+        addresses_deleted = session.query(Address).delete()
+        print(f"Deleted {addresses_deleted} addresses")
+        
+        # Finally users
+        users_deleted = session.query(User).delete()
+        print(f"Deleted {users_deleted} users")
     
     print("Database cleaned successfully!")
-    
-    # Close sessions
-    user_manager.close_session()
-    address_manager.close_session()
-    automobile_manager.close_session()
 
 def demo_operations():
     """Demonstrate all the required operations"""
@@ -103,10 +99,7 @@ def demo_operations():
     
     print("\nDemo completed successfully!")
     
-    # Close sessions
-    user_manager.close_session()
-    address_manager.close_session()
-    automobile_manager.close_session()
+    # Sessions are automatically managed by context managers, no need to close manually
 
 def main():
     """Main function to run the complete setup and demo"""

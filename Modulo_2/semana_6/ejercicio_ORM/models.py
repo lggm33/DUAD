@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
+from sqlalchemy.orm.exc import DetachedInstanceError
 from datetime import datetime
 from database_config import Base
 
@@ -17,7 +18,11 @@ class User(Base):
     automobiles = relationship("Automobile", back_populates="user")
     
     def __repr__(self):
-        return f"<User(id={self.id}, name='{self.name}', email='{self.email}')>"
+        try:
+            return f"<User(id={self.id}, name='{self.name}', email='{self.email}')>"
+        except DetachedInstanceError:
+            # Handle detached instance gracefully
+            return f"<User(detached instance)>"
 
 class Address(Base):
     __tablename__ = "addresses"
@@ -34,7 +39,11 @@ class Address(Base):
     user = relationship("User", back_populates="addresses")
     
     def __repr__(self):
-        return f"<Address(id={self.id}, street='{self.street}', city='{self.city}', user_id={self.user_id})>"
+        try:
+            return f"<Address(id={self.id}, street='{self.street}', city='{self.city}', user_id={self.user_id})>"
+        except DetachedInstanceError:
+            # Handle detached instance gracefully
+            return f"<Address(detached instance)>"
 
 class Automobile(Base):
     __tablename__ = "automobiles"
@@ -52,4 +61,8 @@ class Automobile(Base):
     user = relationship("User", back_populates="automobiles")
     
     def __repr__(self):
-        return f"<Automobile(id={self.id}, brand='{self.brand}', model='{self.model}', year={self.year}, license_plate='{self.license_plate}', user_id={self.user_id})>" 
+        try:
+            return f"<Automobile(id={self.id}, brand='{self.brand}', model='{self.model}', year={self.year}, license_plate='{self.license_plate}', user_id={self.user_id})>"
+        except DetachedInstanceError:
+            # Handle detached instance gracefully
+            return f"<Automobile(detached instance)>" 
