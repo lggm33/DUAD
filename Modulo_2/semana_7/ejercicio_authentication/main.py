@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, Response
-from functools import wraps
 from db import DB_Manager, JWT_Manager
 from config import get_jwt_config, print_config_info
+from auth import require_auth
 import jwt
 
 app = Flask(__name__)
@@ -15,79 +15,6 @@ jwt_manager = JWT_Manager(**jwt_config)
 
 # Print configuration info on startup
 print_config_info()
-
-# Authentication decorators
-def require_auth(f):
-    """
-    Decorator that requires a valid JWT token in Authorization header
-    Adds current_user to the function kwargs
-    """
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        try:
-            # Get token from Authorization header
-            auth_header = request.headers.get('Authorization')
-            if not auth_header:
-                return Response(status=401, response="Authorization header is required")
-            
-            # Extract token from "Bearer <token>" format
-            if not auth_header.startswith('Bearer '):
-                return Response(status=401, response="Authorization header must start with 'Bearer '")
-            
-            token = auth_header.replace("Bearer ", "")
-            
-            # Decode and validate token
-            decoded = jwt_manager.decode(token)
-            if decoded is None:
-                return Response(status=401, response="Invalid or expired token")
-            
-            # Get user information
-            user_id = decoded.get('id')
-            if not user_id:
-                return Response(status=401, response="Invalid token payload")
-            
-            user = db_manager.get_user_by_id(user_id)
-            if not user:
-                return Response(status=401, response="User not found")
-            
-            # Add current user info to function kwargs
-            kwargs['current_user'] = {
-                'id': user[0],
-                'username': user[1],
-                'password': user[2],
-                'role': user[3]
-            }
-            
-            return f(*args, **kwargs)
-            
-        except jwt.ExpiredSignatureError:
-            return Response(status=401, response="Token has expired")
-        except jwt.InvalidTokenError:
-            return Response(status=401, response="Invalid token")
-        except Exception as e:
-            return Response(status=500, response=f"Internal server error on authentication: {e}")
-    
-    return decorated_function
-
-def require_role(required_role):
-    """
-    Decorator that requires a specific role
-    Must be used after @require_auth
-    """
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            current_user = kwargs.get('current_user')
-            if not current_user:
-                return Response(status=500, response="Authentication required before role check")
-            
-            user_role = current_user.get('role')
-            if user_role != required_role:
-                return Response(status=403, response=f"Access denied. Required role: {required_role}")
-            
-            return f(*args, **kwargs)
-        return decorated_function
-    return decorator
 
 # Public endpoints
 @app.route("/")
@@ -112,8 +39,16 @@ def login():
         if not result:
             return Response(status=401, response="Invalid username or password")
         
+        # Include user data in token to avoid DB queries
         user_id = result[0]
-        token = jwt_manager.encode({'id': user_id})
+        username = result[1]
+        role = result[3]
+        
+        token = jwt_manager.encode({
+            'id': user_id,
+            'username': username,
+            'role': role
+        })
         return jsonify(token=token)
     except ValueError as e:
         return Response(status=400, response=f"Invalid JSON format: {str(e)}")
@@ -123,8 +58,7 @@ def login():
 # Protected endpoints
 
 @app.route('/register', methods=['POST'])
-@require_auth
-@require_role('admin')
+@require_auth('admin')
 def register(current_user):
     try:
         # Validate that the request content type is application/json
@@ -164,7 +98,7 @@ def register(current_user):
         return Response(status=500, response=f"Error creating user: {e}")
 
 @app.route('/me', methods=['GET'])
-@require_auth
+@require_auth()
 def me(current_user):
     """Get current user information - requires valid token"""
     return jsonify(
@@ -174,7 +108,7 @@ def me(current_user):
     )
 
 @app.route('/products', methods=['GET'])
-@require_auth
+@require_auth()
 def get_products(current_user):
     """Get all products - requires valid token"""
     try:
@@ -193,8 +127,7 @@ def get_products(current_user):
         return Response(status=500, response="Error retrieving products")
 
 @app.route('/products', methods=['POST'])
-@require_auth
-@require_role('admin')
+@require_auth('admin')
 def create_product(current_user):
     """Create new product - requires admin role"""
     try:
@@ -226,7 +159,7 @@ def create_product(current_user):
 
 
 @app.route('/invoices', methods=['GET'])
-@require_auth
+@require_auth()
 def get_user_invoices(current_user):
     """Get current user's invoices - requires valid token"""
     try:
@@ -246,8 +179,7 @@ def get_user_invoices(current_user):
         return Response(status=500, response="Error retrieving invoices")
 
 @app.route('/invoices/all', methods=['GET'])
-@require_auth
-@require_role('admin')
+@require_auth('admin')
 def get_all_invoices(current_user):
     """Get all invoices - requires admin role"""
     try:
@@ -266,7 +198,7 @@ def get_all_invoices(current_user):
         return Response(status=500, response="Error retrieving all invoices")
 
 @app.route('/buy_product', methods=['POST'])
-@require_auth
+@require_auth()
 def buy_product(current_user):
     """Buy a product - requires valid token"""
     try:
