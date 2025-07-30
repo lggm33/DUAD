@@ -1,0 +1,28 @@
+get http://localhost:3000/liveness
+
+###
+
+post http://localhost:3000/register
+content-type: application/json
+
+{
+    "username": "lggm",
+    "password": "1234"
+}
+
+###
+
+post http://localhost:3000/login
+content-type: application/json
+
+{
+    "username": "lggm",
+    "password": "1234"
+}
+
+###
+
+get http://localhost:3000/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MX0.tjVEMiS5O2yNzclwLdaZ-FuzrhyqOT7UwM9Hfc0ZQ8Q
+
+###
