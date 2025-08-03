@@ -1,0 +1,147 @@
+### Authentication System Tests
+### Demonstrates centralized authentication with role-based access control
+
+# Variables
+@baseUrl = http://localhost:3000
+@adminToken = eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MX0.Wv0PVF3SDccX2iwhLK3D2SLiHTPEdllhVNVVCMRzTrx1sB_m2J926f1p5WmxrOvt_CzwtawVOHk5Tw45sKcdHvtDbwbmDouqlGiabA0_pDdozujDjvHFHcWuIbDuWPNS9uuTgTLodi5eDplPPrcleuz0nxEEa1HqV7HHnQFx69v4GbIokpigMn528ws_BY7Cr6wo9rJXMJuK_fSZSGsUFJFrZ87Yx2M7g_vv-jCAN8LIpGgJzbY_eAtxuHQ7UXgLWotBuZ5hl2OqiSTvI55ezEY3AP2Us5Cs1bhHje5viUGHNauYqzY68xhMxDAG2D8eXQBD5ZuzF2ZQqd9OZbhiqA
+@userToken = eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mn0.Ag9VQJPrLyYsIkLKGfwqBGv_FRzpErH-FnWYgseeDlymxSrivV2vddQXi-uPlDrdpQlfGEUqxxEmLkQwuZlaqW458DvObj0QLkNolXJBMnn4MvoMQElnGPcju4ZyfdwOrGH2YsAtjUgLOSQV3L2keYtlq6YWPV5bOnLlVOAyaNwhYevmUkU1se7b1qmDZ3RinJoiZ5ByKBpOKL5CTJ2GQO51H5UVkLisaZHxIXW8dnVSnKagKIGI2p1uLHoJf6QWxqwsp6OqV7jgSyO-2oFTWOXEUFOmt_iUba8XMIIj4aunK8nZxEWGeNICmbDAch4cQlU2SigWGrSOmwK73pT8XQ
+
+### 1. Test public endpoints (no auth required)
+GET {{baseUrl}}/
+###
+
+GET {{baseUrl}}/liveness
+###
+
+### 2. Register admin user
+POST {{baseUrl}}/register
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+    "username": "lggm_user",
+    "password": "1234",
+    "role": "use1r"
+}
+
+### 3. Register regular user (should fail - only admin registration allowed)
+POST {{baseUrl}}/register
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+    "username": "user_test",
+    "password": "user123",
+    "role": "user"
+}
+
+### 4. Login with admin credentials
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+    "username": "admin",
+    "password": "admin"
+}
+
+### 5. Login with user credentials
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+    "username": "user",
+    "password": "user"
+}
+
+### 6. Test protected endpoint without token (should fail 401)
+GET {{baseUrl}}/me
+
+
+### 7. Test protected endpoint with invalid token (should fail 401)
+GET {{baseUrl}}/me
+Authorization: Bearer invalid_token_here
+# Authorization: Bearer {{adminToken}}
+
+### 8. Test protected endpoint with valid admin token
+GET {{baseUrl}}/me
+Authorization: Bearer {{adminToken}}
+Authorization: Bearer {{adminToken}}
+
+### 9. Test protected endpoint with valid user token
+GET {{baseUrl}}/me
+Authorization: Bearer {{userToken}}
+
+### 10. Get products - requires auth only (any valid user)
+GET {{baseUrl}}/products
+Authorization: Bearer {{userToken}}
+
+### 11. Create product - requires admin role
+POST {{baseUrl}}/products
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+    "name": "Test Product",
+    "price": 99,
+    "date_entry": "2023-01-01",
+    "quantity": 50
+}
+
+### 12. Try to create product with user token (should fail 403)
+POST {{baseUrl}}/products
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+    "name": "Test Product",
+    "price": 99,
+    "date_entry": "2023-01-01",
+    "quantity": 50
+}
+
+### 13. Buy product
+POST {{baseUrl}}/buy_product
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+    "product_id": 1,
+    "quantity": 10
+}
+
+### 14. Get user's invoices (any authenticated user)
+GET {{baseUrl}}/invoices
+Authorization: Bearer {{userToken}}
+
+### 14. Get all invoices - admin only
+GET {{baseUrl}}/invoices/all
+Authorization: Bearer {{adminToken}}
+
+### 15. Try to get all invoices with user token (should fail 403)
+GET {{baseUrl}}/invoices/all
+Authorization: Bearer {{userToken}}
+
+### Error scenarios to test:
+
+### Missing Authorization header
+GET {{baseUrl}}/me
+
+### Malformed Authorization header (missing "Bearer ")
+GET {{baseUrl}}/me
+Authorization: just_token_without_bearer
+
+### Token without required claims
+GET {{baseUrl}}/me
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoidGVzdCJ9.invalid
+
+### Missing JSON data
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+### Missing required fields
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+    "username": "admin"
+} 
