@@ -3,8 +3,23 @@ from db import DB_Manager, JWT_Manager
 from config import get_jwt_config, print_config_info
 from auth import require_auth
 import jwt
+from cache_manager import CacheManager
+import os
+from dotenv import load_dotenv
 
 app = Flask(__name__)
+
+load_dotenv()
+
+REDIS_HOST = os.getenv("REDIS_HOST")
+REDIS_PORT = os.getenv("REDIS_PORT")
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+
+cache_manager = CacheManager(
+    host=REDIS_HOST,
+    port=REDIS_PORT,
+    password=REDIS_PASSWORD
+)
 
 # Initialize database and JWT managers
 db_manager = DB_Manager()
@@ -107,11 +122,51 @@ def me(current_user):
         role=current_user['role']
     )
 
+@app.route('/products/<int:product_id>', methods=['GET'])
+@require_auth() 
+def get_product(current_user, product_id):
+    """Get a product by ID - requires valid token"""
+    if not product_id:
+        return Response(status=400, response="Product ID is required")
+    if not isinstance(product_id, int):
+        return Response(status=400, response="Product ID must be an integer")
+    if product_id <= 0:
+        return Response(status=400, response="Product ID must be greater than 0")
+    
+    cache_key = f"product_{product_id}"
+    cached_product = cache_manager.get_data(cache_key)
+    if cached_product:
+        print(f"Product {product_id} found in cache")
+        return jsonify(product=cached_product)
+    
+    product = db_manager.get_product_dict_by_id(product_id)
+    if not product:
+        return Response(status=404, response="Product not found")
+    
+    # Convert date to string for JSON serialization
+    product_serializable = {
+        'id': product['id'],
+        'name': product['name'],
+        'price': product['price'],
+        'date_entry': str(product['date_entry']),
+        'quantity': product['quantity']
+    }
+    
+    cache_manager.store_data(cache_key, product_serializable, 600)
+    return jsonify(product=product_serializable)
+
 @app.route('/products', methods=['GET'])
 @require_auth()
 def get_products(current_user):
     """Get all products - requires valid token"""
     try:
+
+        cache_key = "all_products"
+        cached_products = cache_manager.get_data(cache_key)
+        if cached_products:
+            print("Products found in cache")
+            return jsonify(products=cached_products)
+
         products = db_manager.get_all_products()
         products_list = []
         for product in products:
@@ -122,6 +177,8 @@ def get_products(current_user):
                 'date_entry': str(product[3]),
                 'quantity': product[4]
             })
+        
+        cache_manager.store_data(cache_key, products_list, 600)
         return jsonify(products=products_list)
     except Exception as e:
         return Response(status=500, response="Error retrieving products")
@@ -146,8 +203,10 @@ def create_product(current_user):
             data.get('date_entry'),
             data.get('quantity')
         )
-        
         product_id = result[0]
+        cache_key = 'all_products'
+        cache_manager.delete_data(cache_key)
+
         return jsonify(
             message="Product created successfully",
             product_id=product_id
@@ -157,6 +216,50 @@ def create_product(current_user):
     except Exception as e:
         return Response(status=500, response=f"Error creating product: {e}")
 
+
+@app.route('/products/<int:product_id>', methods=['DELETE'])
+@require_auth('admin')
+def delete_product(current_user, product_id):
+    """Delete a product by ID - requires admin role"""
+    if not product_id:
+        return Response(status=400, response="Product ID is required")
+    if not isinstance(product_id, int):
+        return Response(status=400, response="Product ID must be an integer")
+    if product_id <= 0:
+        return Response(status=400, response="Product ID must be greater than 0")
+    
+    try:
+        db_manager.delete_product(product_id)
+    except Exception as e:
+        return Response(status=500, response=f"Error deleting product: {e}")
+
+    cache_key = f"product_{product_id}"
+    cache_manager.delete_data(cache_key)
+    cache_key = 'all_products'
+    cache_manager.delete_data(cache_key)
+    return Response(status=204, response="Product deleted successfully")
+
+@app.route('/products/<int:product_id>', methods=['PATCH'])
+@require_auth('admin')
+def update_product(current_user, product_id):
+    """Update a product by ID - requires admin role"""
+    if not product_id:
+        return Response(status=400, response="Product ID is required")
+    if not isinstance(product_id, int):
+        return Response(status=400, response="Product ID must be an integer")
+    if product_id <= 0:
+        return Response(status=400, response="Product ID must be greater than 0")
+    
+    try:
+        db_manager.update_product(product_id, request.get_json())
+    except Exception as e:
+        return Response(status=500, response=f"Error updating product: {e}")
+    
+    cache_key = f"product_{product_id}"
+    cache_manager.delete_data(cache_key)
+    cache_key = 'all_products'
+    cache_manager.delete_data(cache_key)
+    return Response(status=204, response="Product updated successfully")
 
 @app.route('/invoices', methods=['GET'])
 @require_auth()
@@ -225,6 +328,10 @@ def buy_product(current_user):
             return Response(status=400, response="Not enough stock")
 
         db_manager.update_product_quantity(product_id, quantity)
+        cache_key = f"product_{product_id}"
+        cache_manager.delete_data(cache_key)
+        cache_key = 'all_products'
+        cache_manager.delete_data(cache_key)
 
         total_amount = product['price'] * quantity
         invoice = db_manager.insert_invoice(current_user['id'], product_id, quantity, total_amount)
@@ -244,6 +351,7 @@ if __name__ == "__main__":
     try:
         db_manager.drop_and_create_tables()
         db_manager.populate_tables()
+        
     except Exception as e:
         print(f"Error initializing database: {e}")
     app.run(host="localhost", port=3001, debug=True)
