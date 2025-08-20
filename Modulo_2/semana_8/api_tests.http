@@ -1,0 +1,150 @@
+### Authentication System Tests
+### Demonstrates centralized authentication with role-based access control
+
+# Variables
+@baseUrl = http://localhost:3001
+@adminToken = eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiJ9.YyAIkylMuB0wX3VJmNRTDvC-q6r4g7RUAWhp51EflSex6z-0862Z-LqgkwuFteTlFr1cK8TnHaxtabJgMfBK_I0Y6QTJw3pN14rWm3ayV4PV-BZc9YeheegbC0AoNqPVMjEljuQuyi2r367Y3a6cYYooPQavI-tY0ICmGIsqxIN_aAgaI2jqVRJO0V9ocIl-iCzNRFrio0aWtUHYJ6-Uhtafy_9UCvG3TtGLJXD27pV665wAEH9JyROgp9aOjTTbOv2ViNUzp42I_2OZqHsKf1EHJTjpdZITsP_XAki4yEYJCUAYkXA8Yn0DLe8z5Uew44kKIAWEtoe5qqK_LHHr0w
+@userToken = eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwidXNlcm5hbWUiOiJ1c2VyIiwicm9sZSI6InVzZXIifQ.pVvBGwWBVt7tAwMFAwmHwpx4O0kTpudFc3E4U5mYO_e8JlDAulihirgXp1WZJzBsbEwG4rTAxcUlneFjgsNsv1chIOWzpUp5O0QYMxaQwTJs0ka7VO9khTDfH3vu_LTqWbroPM3lNLdrr0dsESzgiBjHH82-205NspWBC_lU1nbTqLse2WcyFTwtMUFVeP7Wx0BFlWLzdA43VmkqFGGHWf_4JDI2dltsnkMckTP9jPnFvmZhhCsuBlh-dgsFP3oqLJaCg3OIfhQcoT86M9TgxdoQddrWd-Fdb52_Xv_lo6CIFjlGCssdCJ0I1yFAgQeBdN4QbnH6ya-qvffWKd_lTg
+
+### 1. Test public endpoints (no auth required)
+GET {{baseUrl}}/
+###
+
+GET {{baseUrl}}/liveness
+###
+
+### 2. Register admin user
+POST {{baseUrl}}/register
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+    "username": "lggm_user1",
+    "password": "1234",
+    "role": "admin"
+}
+
+### 3. Register regular user (should fail - only admin registration allowed)
+POST {{baseUrl}}/register
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+    "username": "user_test",
+    "password": "user123",
+    "role": "user"
+}
+
+### 4. Login with admin credentials
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+    "username": "admin",
+    "password": "admin"
+}
+
+### 5. Login with user credentials
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+    "username": "user",
+    "password": "user"
+}
+
+### 6. Test protected endpoint without token (should fail 401)
+GET {{baseUrl}}/me
+
+
+### 7. Test protected endpoint with invalid token (should fail 401)
+GET {{baseUrl}}/me
+Authorization: Bearer invalid_token_here
+# Authorization: Bearer {{adminToken}}
+
+### 8. Test protected endpoint with valid admin token
+GET {{baseUrl}}/me
+Authorization: Bearer {{adminToken}}
+
+### 9. Test protected endpoint with valid user token
+GET {{baseUrl}}/me
+Authorization: Bearer {{userToken}}
+
+### 10. Get products - requires auth only (any valid user)
+GET {{baseUrl}}/products
+Authorization: Bearer {{userToken}}
+
+### 11. Create product - requires admin role
+POST {{baseUrl}}/products
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+    "name": "Test Product",
+    "price": 99,
+    "date_entry": "2023-01-01",
+    "quantity": 50
+}
+
+### 12. Try to create product with user token (should fail 403)
+POST {{baseUrl}}/products
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+    "name": "Test Product",
+    "price": 99,
+    "date_entry": "2023-01-01",
+    "quantity": 50
+}
+
+### 12. Get product by ID
+GET {{baseUrl}}/products/1
+Authorization: Bearer {{userToken}}
+
+### 13. Buy product
+POST {{baseUrl}}/buy_product
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+    "product_id": 1,
+    "quantity": 10
+}
+
+### 14. Get user's invoices (any authenticated user)
+GET {{baseUrl}}/invoices
+Authorization: Bearer {{userToken}}
+
+### 14. Get all invoices - admin only
+GET {{baseUrl}}/invoices/all
+Authorization: Bearer {{adminToken}}
+
+### 15. Try to get all invoices with user token (should fail 403)
+GET {{baseUrl}}/invoices/all
+Authorization: Bearer {{userToken}}
+
+### Error scenarios to test:
+
+### Missing Authorization header
+GET {{baseUrl}}/me
+
+### Malformed Authorization header (missing "Bearer ")
+GET {{baseUrl}}/me
+Authorization: just_token_without_bearer
+
+### Token without required claims
+GET {{baseUrl}}/me
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoidGVzdCJ9.invalid
+
+### Missing JSON data
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+### Missing required fields
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+    "username": "admin"
+} 
