@@ -1,0 +1,487 @@
+# Variables
+@base_url = http://127.0.0.1:5001
+
+# Customer credentials
+@customer_email = customercus@example.com
+@customer_password = customerpassword123
+@customer_access_token = eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc1NzQzOTU4OCwianRpIjoiMGVjOTc3MTktNGRlMy00NTNmLWI4MzUtN2I1M2ZkMTQzYmI0IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjE4IiwibmJmIjoxNzU3NDM5NTg4LCJjc3JmIjoiYjhiYTFkMTUtNzZiNy00NTY2LWJiZjctYmJjMzNmNmIyOTdjIiwiZXhwIjoxNzU3NDQzMzg4LCJyb2xlIjoiY3VzdG9tZXIifQ.hRH73pq8BcDZ-9k6JXslvQrpgePhWbsvOECSEv1s3eGxJqJ2QT9SmWDSDJ6LgYmoDljktvfjCnbIKBRtTpBxh6G5qRZ9r05m4XdcDn6ZKOTyiRnoHXBpP9yLa0r6eXlNiJarvy4k1vr7wjoVExrWRk-33WxW1X2bzHMUrt8UPlnfpv65pSMhwfFvtXprLFVeNY12YMD_IN3P28ftVzbmGzA5k30oP3fq86PF1O3w8zrL0xz3JECYmSyiJndNAL9yJMoKtCFcQfoRHVQ9T17O7A9Hjta_wHu1xooop7bbkDnDh9DtE0Oy61vZA_GAlWL5_hJCPgVPZSb1qjekMLTKCg
+@customer_refresh_token = 
+
+# Admin credentials
+@admin_email = adminadmin@example.com
+@admin_password = adminpassword123
+@admin_access_token = eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc1NzQzODkzNywianRpIjoiMzYzOWI3OTItZjJiYi00YzFhLTk3NjktNWI2NDQ2OGUxYjA5IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjE3IiwibmJmIjoxNzU3NDM4OTM3LCJjc3JmIjoiODU5NTlhZTYtYjY3Ni00NmY0LThlZDEtYWY4MGVlNzdhOTk1IiwiZXhwIjoxNzU3NDQyNzM3LCJyb2xlIjoiYWRtaW4ifQ.dcnUsXxgSEqNEq8Fp1ume5es220tLBNJZHPPDAA2zaWmA-HC1wduKcWtdWYURAq__qIj0dvxb6ytAV-O3_MszrvKeFgm5iNG4AfXlTl1M5Xlo_3FAceExhhwTRydMicasAVpFQm2396WKRoGVXfkjrtiATrLBuaAj4oEjetx39eQVN1bI3ur0-j8eSMsbJzzbrLHQzg8kbqYnOEgCngeC0XefhoDK_qS3CgeO_krsy3XrhChBzkxUjTqZj2T1u1v7CeVyfRNRWQqIaXVr27Dm-n0ohGggMiboW0L1N7pH0_bUGnDCmcEQRYmj0z3EjZ0FYoB9_Cw3_Lh9JiPBV3Bvg
+@admin_refresh_token = 
+
+# Test IDs
+@user_id = 18
+@product_id = 2
+@delivery_address_id = 6
+@cart_id = 4
+@sale_id = 1
+@invoice_id = 1
+
+### Health check
+GET {{base_url}}/health
+
+# ========================================
+# USER AUTHENTICATION ENDPOINTS
+# ========================================
+
+### Register a new customer (no auth required)
+POST {{base_url}}/users/register
+Content-Type: application/json
+
+{
+  "email": "{{customer_email}}",
+  "password": "{{customer_password}}",
+  "name": "Customer User",
+  "phone": "+1234567890"
+}
+
+### Register a new admin (by admin)
+POST {{base_url}}/users/register
+Content-Type: application/json
+Authorization: Bearer {{admin_access_token}}
+
+{
+  "email": "{{admin_email}}",
+  "password": "{{admin_password}}",
+  "name": "Admin User",
+  "phone": "+1987654321",
+  "role": "admin"
+}
+
+### Login as customer
+POST {{base_url}}/users/login
+Content-Type: application/json
+
+{
+  "email": "{{customer_email}}",
+  "password": "{{customer_password}}"
+}
+
+### Login as admin
+POST {{base_url}}/users/login
+Content-Type: application/json
+
+{
+  "email": "{{admin_email}}",
+  "password": "{{admin_password}}"
+}
+
+### Refresh access token
+POST {{base_url}}/users/refresh
+Authorization: Bearer {{customer_refresh_token}}
+
+### Logout (revoke refresh token)
+POST {{base_url}}/users/logout
+Authorization: Bearer {{customer_refresh_token}}
+
+### Logout access (revoke access token)
+POST {{base_url}}/users/logout-access
+Authorization: Bearer {{customer_access_token}}
+
+# ========================================
+# USER MANAGEMENT ENDPOINTS (Admin only)
+# ========================================
+
+### Get user by ID (Admin only)
+GET {{base_url}}/users/{{user_id}}
+Authorization: Bearer {{admin_access_token}}
+
+### Update user by ID (Admin or same user)
+PUT {{base_url}}/users/{{user_id}}
+Content-Type: application/json
+Authorization: Bearer {{admin_access_token}}
+
+{
+  "name": "Updated Name",
+  "phone": "+1111111111"
+}
+
+### Delete user by ID (Admin or same user)
+DELETE {{base_url}}/users/{{user_id}}
+Authorization: Bearer {{admin_access_token}}
+
+### Make user admin (Admin only)
+POST {{base_url}}/users/{{user_id}}/make-admin
+Authorization: Bearer {{admin_access_token}}
+
+# ========================================
+# DELIVERY ADDRESS ENDPOINTS
+# ========================================
+
+### Add delivery address to user
+POST {{base_url}}/users/{{user_id}}/delivery-addresses
+Content-Type: application/json
+Authorization: Bearer {{customer_access_token}}
+
+{
+  "user_id": {{user_id}},
+  "address": "123 Main St",
+  "city": "Sample City", 
+  "country": "USA",
+  "postal_code": "12345"
+}
+
+### Get delivery addresses for user
+GET {{base_url}}/users/{{user_id}}/delivery-addresses
+Authorization: Bearer {{admin_access_token}}
+
+### Update delivery address
+PUT {{base_url}}/users/{{user_id}}/delivery-addresses/{{delivery_address_id}}
+Content-Type: application/json
+Authorization: Bearer {{admin_access_token}}
+
+{
+  "delivery_address_id": {{delivery_address_id}},
+  "user_id": {{user_id}},
+  "address": "456 Updated St",
+  "city": "Updated City",
+  "country": "USA",
+  "postal_code": "54321"
+}
+
+# ========================================
+# PRODUCT ENDPOINTS
+# ========================================
+
+### Create product (Admin only)
+POST {{base_url}}/products/
+Content-Type: application/json
+Authorization: Bearer {{admin_access_token}}
+
+{
+  "name": "Sample Product1",
+  "description": "This is a sample product description",
+  "price": 29.99,
+  "stock": 100
+}
+
+### Get all products (Auth required)
+GET {{base_url}}/products/
+Authorization: Bearer {{customer_access_token}}
+
+### Get product by ID (Auth required)
+GET {{base_url}}/products/{{product_id}}
+Authorization: Bearer {{customer_access_token}}
+
+### Update product (Admin only)
+PUT {{base_url}}/products/{{product_id}}
+Content-Type: application/json
+Authorization: Bearer {{admin_access_token}}
+
+{
+  "id": {{product_id}},
+  "name": "Updated Product Name",
+  "description": "Updated product description",
+  "price": 35.99,
+  "stock": 150
+}
+
+### Delete product (Admin only)
+DELETE {{base_url}}/products/{{product_id}}
+Authorization: Bearer {{admin_access_token}}
+
+# ========================================
+# CART ENDPOINTS (Customer)
+# ========================================
+
+### Get or create active cart
+GET {{base_url}}/sales/cart
+Authorization: Bearer {{customer_access_token}}
+
+### Get specific cart by ID
+GET {{base_url}}/sales/cart/{{cart_id}}
+Authorization: Bearer {{customer_access_token}}
+
+### Get all user carts
+GET {{base_url}}/sales/carts
+Authorization: Bearer {{customer_access_token}}
+
+### Get user carts with status filter
+GET {{base_url}}/sales/carts?status=active
+Authorization: Bearer {{customer_access_token}}
+
+### Add product to cart
+POST {{base_url}}/sales/cart/add
+Content-Type: application/json
+Authorization: Bearer {{customer_access_token}}
+
+{
+  "product_id": {{product_id}},
+  "quantity": 2
+}
+
+### Update product quantity in cart
+PUT {{base_url}}/sales/cart/product/{{product_id}}
+Content-Type: application/json
+Authorization: Bearer {{customer_access_token}}
+
+{
+  "quantity": 5
+}
+
+### Remove product from cart
+DELETE {{base_url}}/sales/cart/product/{{product_id}}
+Authorization: Bearer {{customer_access_token}}
+
+### Clear entire cart
+DELETE {{base_url}}/sales/cart/clear
+Authorization: Bearer {{customer_access_token}}
+
+### Get cart total
+GET {{base_url}}/sales/cart/total
+Authorization: Bearer {{customer_access_token}}
+
+### Update cart status
+PUT {{base_url}}/sales/cart/{{cart_id}}/status
+Content-Type: application/json
+Authorization: Bearer {{customer_access_token}}
+
+{
+  "status": "expired"
+}
+
+### Validate cart for checkout
+GET {{base_url}}/sales/cart/validate
+Authorization: Bearer {{customer_access_token}}
+
+# ========================================
+# SALES ENDPOINTS (Customer)
+# ========================================
+
+### Get delivery addresses for current user (to verify ID)
+GET {{base_url}}/users/18/delivery-addresses
+Authorization: Bearer {{customer_access_token}}
+
+###
+
+### Get current user's cart (to verify cart_id)
+GET {{base_url}}/sales/cart
+Authorization: Bearer {{customer_access_token}}
+
+###
+
+### Checkout (convert cart to sale)
+POST {{base_url}}/sales/checkout
+Content-Type: application/json
+Authorization: Bearer {{customer_access_token}}
+
+{
+  "cart_id": {{cart_id}},
+  "delivery_address_id": {{delivery_address_id}},
+  "payment_method": "credit_card"
+}
+
+### Get user sales
+GET {{base_url}}/sales/sales
+Authorization: Bearer {{customer_access_token}}
+
+### Get specific sale by ID
+GET {{base_url}}/sales/sales/{{sale_id}}
+Authorization: Bearer {{customer_access_token}}
+
+# ========================================
+# ADMINISTRATIVE CART ENDPOINTS (Admin only)
+# ========================================
+
+### Get all carts in system (Admin)
+GET {{base_url}}/sales/admin/carts
+Authorization: Bearer {{admin_access_token}}
+
+### Get all carts with status filter (Admin)
+GET {{base_url}}/sales/admin/carts?status=active
+Authorization: Bearer {{admin_access_token}}
+
+### Get all carts for specific user (Admin)
+GET {{base_url}}/sales/admin/carts?user_id={{user_id}}
+Authorization: Bearer {{admin_access_token}}
+
+### Get any cart by ID (Admin)
+GET {{base_url}}/sales/admin/carts/{{cart_id}}
+Authorization: Bearer {{admin_access_token}}
+
+### Update any cart status (Admin)
+PUT {{base_url}}/sales/admin/carts/{{cart_id}}/status
+Content-Type: application/json
+Authorization: Bearer {{admin_access_token}}
+
+{
+  "status": "cancelled"
+}
+
+# ========================================
+# ADMINISTRATIVE SALES ENDPOINTS (Admin only)
+# ========================================
+
+### Get all sales in system (Admin)
+GET {{base_url}}/sales/admin/sales
+Authorization: Bearer {{admin_access_token}}
+
+### Get sales with filters (Admin)
+GET {{base_url}}/sales/admin/sales?user_id={{user_id}}&status=completed
+Authorization: Bearer {{admin_access_token}}
+
+### Get sales with date range (Admin)
+GET {{base_url}}/sales/admin/sales?date_from=2024-01-01&date_to=2024-12-31
+Authorization: Bearer {{admin_access_token}}
+
+### Get any sale by ID (Admin)
+GET {{base_url}}/sales/admin/sales/{{sale_id}}
+Authorization: Bearer {{admin_access_token}}
+
+### Update sale status (Admin)
+PUT {{base_url}}/sales/admin/sales/{{sale_id}}/status
+Content-Type: application/json
+Authorization: Bearer {{admin_access_token}}
+
+{
+  "status": "shipped"
+}
+
+# ========================================
+# ROLE VALIDATION TESTS
+# ========================================
+
+### Test customer trying to access admin cart endpoint (should fail)
+GET {{base_url}}/sales/admin/carts
+Authorization: Bearer {{customer_access_token}}
+
+### Test admin accessing customer cart endpoint (should work)
+GET {{base_url}}/sales/cart
+Authorization: Bearer {{admin_access_token}}
+
+### Test unauthenticated access (should fail)
+GET {{base_url}}/sales/cart
+
+### Test customer trying to access admin sales (should fail)
+GET {{base_url}}/sales/admin/sales
+Authorization: Bearer {{customer_access_token}}
+
+# ========================================
+# INVOICE ENDPOINTS
+# ========================================
+
+### Checkout with automatic invoice generation
+POST {{base_url}}/sales/checkout
+Authorization: Bearer {{customer_access_token}}
+Content-Type: application/json
+
+{
+    "cart_id": {{cart_id}},
+    "delivery_address_id": {{delivery_address_id}},
+    "payment_method": "credit_card",
+    "payment_reference": "PAY-12345",
+    "generate_invoice": true
+}
+
+### Create invoice manually for an existing sale
+POST {{base_url}}/sales/invoices
+Authorization: Bearer {{customer_access_token}}
+Content-Type: application/json
+
+{
+    "sale_id": {{sale_id}},
+    "delivery_address_id": {{delivery_address_id}}
+}
+
+### Get specific invoice by ID
+GET {{base_url}}/sales/invoices/{{invoice_id}}
+Authorization: Bearer {{customer_access_token}}
+
+### Get specific invoice with detailed information
+GET {{base_url}}/sales/invoices/{{invoice_id}}?include_details=true&include_summary=true
+Authorization: Bearer {{customer_access_token}}
+
+### Get all invoices for current user
+GET {{base_url}}/sales/invoices
+Authorization: Bearer {{customer_access_token}}
+
+### Get user invoices with date filter and summary
+GET {{base_url}}/sales/invoices?start_date=2024-01-01&end_date=2024-12-31&summary=true
+Authorization: Bearer {{customer_access_token}}
+
+### Get all invoices for a specific sale
+GET {{base_url}}/sales/sales/{{sale_id}}/invoices
+Authorization: Bearer {{customer_access_token}}
+
+### Update invoice (change delivery address)
+PUT {{base_url}}/sales/invoices/{{invoice_id}}
+Authorization: Bearer {{customer_access_token}}
+Content-Type: application/json
+
+{
+    "delivery_address_id": {{delivery_address_id}}
+}
+
+### Delete invoice
+DELETE {{base_url}}/sales/invoices/{{invoice_id}}
+Authorization: Bearer {{customer_access_token}}
+
+# ========================================
+# ADMIN INVOICE ENDPOINTS (NEW)
+# ========================================
+
+### Admin - Get all invoices in system
+GET {{base_url}}/sales/admin/invoices
+Authorization: Bearer {{admin_access_token}}
+
+### Admin - Get all invoices with filters and analytics
+GET {{base_url}}/sales/admin/invoices?user_id={{user_id}}&date_from=2024-01-01&date_to=2024-12-31&analytics=true
+Authorization: Bearer {{admin_access_token}}
+
+### Admin - Get specific invoice by ID
+GET {{base_url}}/sales/admin/invoices/{{invoice_id}}
+Authorization: Bearer {{admin_access_token}}
+
+### Admin - Get invoice with full details and summary
+GET {{base_url}}/sales/admin/invoices/{{invoice_id}}?include_details=true&include_summary=true
+Authorization: Bearer {{admin_access_token}}
+
+### Admin - Create invoice for any sale
+POST {{base_url}}/sales/admin/invoices
+Authorization: Bearer {{admin_access_token}}
+Content-Type: application/json
+
+{
+    "sale_id": {{sale_id}},
+    "delivery_address_id": {{delivery_address_id}}
+}
+
+### Admin - Update any invoice
+PUT {{base_url}}/sales/admin/invoices/{{invoice_id}}
+Authorization: Bearer {{admin_access_token}}
+Content-Type: application/json
+
+{
+    "delivery_address_id": {{delivery_address_id}}
+}
+
+### Admin - Delete any invoice
+DELETE {{base_url}}/sales/admin/invoices/{{invoice_id}}
+Authorization: Bearer {{admin_access_token}}
+
+### Admin - Search invoices by total amount
+GET {{base_url}}/sales/admin/invoices/search?min_total=50.00&max_total=500.00
+Authorization: Bearer {{admin_access_token}}
+
+# ========================================
+# TESTING INVOICE AUTHORIZATION
+# ========================================
+
+### Test customer accessing their own invoice (should work)
+GET {{base_url}}/sales/invoices/{{invoice_id}}
+Authorization: Bearer {{customer_access_token}}
+
+### Test admin accessing any invoice (should work)
+GET {{base_url}}/sales/admin/invoices/{{invoice_id}}
+Authorization: Bearer {{admin_access_token}}
+
+### Test unauthenticated access to invoice (should fail)
+GET {{base_url}}/sales/invoices/{{invoice_id}}
+
+### Test customer trying to access admin invoice endpoints (should fail)
+GET {{base_url}}/sales/admin/invoices
+Authorization: Bearer {{customer_access_token}}
