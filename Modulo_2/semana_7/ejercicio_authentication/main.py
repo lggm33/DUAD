@@ -246,4 +246,4 @@ if __name__ == "__main__":
         db_manager.populate_tables()
     except Exception as e:
         print(f"Error initializing database: {e}")
-    app.run(host="localhost", port=3000, debug=True)
+    app.run(host="localhost", port=3001, debug=True)
