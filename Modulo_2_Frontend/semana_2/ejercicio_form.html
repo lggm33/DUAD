@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Votación</title>
+</head>
+<body>
+    <h1>Formulario de Votación</h1>
+    
+    <form action="https://httpbin.org/post" method="POST">
+        <h2>Información del Votante</h2>
+        
+        <div>
+            <label for="nombre_completo">Nombre completo:</label>
+            <input type="text" id="nombre_completo" name="nombre_completo" required>
+        </div>
+        
+        <div>
+            <label for="correo">Correo:</label>
+            <input type="email" id="correo" name="correo" required>
+        </div>
+        
+        <div>
+            <label for="identificacion">Número de Identificación:</label>
+            <input type="text" id="identificacion" name="identificacion" required>
+        </div>
+        
+        <div>
+            <label for="telefono">Teléfono:</label>
+            <input type="tel" id="telefono" name="telefono" required>
+        </div>
+        
+        <h2>Selección de Candidato</h2>
+        
+        <fieldset>
+            <legend>Seleccione un candidato:</legend>
+            
+            <div>
+                <input type="radio" id="candidato1" name="candidato_seleccionado" value="Candidato #1" required>
+                <label for="candidato1">Candidato #1</label>
+            </div>
+            
+            <div>
+                <input type="radio" id="candidato2" name="candidato_seleccionado" value="Candidato #2" required>
+                <label for="candidato2">Candidato #2</label>
+            </div>
+            
+            <div>
+                <input type="radio" id="candidato3" name="candidato_seleccionado" value="Candidato #3" required>
+                <label for="candidato3">Candidato #3</label>
+            </div>
+        </fieldset>
+        
+        <div>
+            <button type="submit">Confirmar Selección</button>
+        </div>
+    </form>
+</body>
+</html>
