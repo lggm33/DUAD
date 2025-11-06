@@ -209,6 +209,12 @@ header h3 {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
+
+.button-primary:active {
+    background-color: #ad1457;
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
     
 
 /* Main */
@@ -294,6 +300,18 @@ main h2 {
     border: none;
     outline: none;
     border-radius: 10px;
+}
+
+.card button:hover {
+    background-color: #333;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.card button:active {
+    background-color: #000;
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 /* Contacto */
