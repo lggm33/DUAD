@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejercicio 1</title>
+</head>
+<body>
+    <h1>Ejercicio 1</h1>
+    <button id="myButton">Add element</button>
+    <button id="myButton2">Clear all elements</button>
+    <ul id="myList"></ul>
+    <script>
+        const myButton = document.getElementById('myButton');
+        const myButton2 = document.getElementById('myButton2');
+        const myList = document.getElementById('myList');
+        myButton.addEventListener('click', () => {
+            const newElement = document.createElement('li');
+            newElement.textContent = 'Element';
+            myList.appendChild(newElement);
+        });
+        myButton2.addEventListener('click', () => {
+            myList.innerHTML = '';
+        });
+    </script>
+</body>
+</html>
