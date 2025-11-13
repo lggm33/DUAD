@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejercicio 3</title>
+    <script src="ejercicio_3.js"></script>
+</head>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+    }
+    form {
+        display: flex;
+        flex-direction: column;
+        max-width: 300px;
+    }
+    label {
+        margin-top: 10px;
+    }
+    input {
+        margin-top: 5px;
+    }
+    button {
+        margin-top: 20px;}
+      
+</style>
+<body>
+    <h1>Ejercicio 3</h1>
+    <h2> Register form</h2>
+    <form id="employeeForm">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name">
+        <label for="lastname">Lastname</label>
+        <input type="text" id="lastname" name="lastname">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password">
+    <label>Are you an employee?</label>
+    <div>
+        <input type="radio" id="employeeYes" name="isEmployee" value="yes">
+        <label for="employeeYes">Yes</label>
+        <input type="radio" id="employeeNo" name="isEmployee" value="no">
+        <label for="employeeNo">No</label>
+    </div>
+        <label  id="employeeIdLabel" for="employeeId">Employee ID</label>
+        <input type="text" id="employeeId" name="employeeId">
+
+    </form>
+    <button id="submitButton">Submit</button>
+</body>
+</html>
