@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav>
+        <a href="perfil.html">Mi Perfil</a>
+        <a href="cambio-password.html">Cambiar Contraseña</a>
+        <a href="#" onclick="logout()">Cerrar Sesión</a>
+    </nav>
+    
+    <div class="container with-nav">
+        <h1>Mi Perfil</h1>
+        
+        <div id="profile-content">
+            <p>Cargando...</p>
+        </div>
+        
+        <button class="btn-danger" onclick="logout()">Cerrar Sesión</button>
+    </div>
+    
+    <script src="app.js"></script>
+    <script>
+        loadProfile();
+    </script>
+</body>
+</html>
