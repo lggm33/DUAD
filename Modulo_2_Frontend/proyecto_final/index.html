@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inicio</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Bienvenido</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 20px;">
+            Sistema de gestión de tareas
+        </p>
+        
+        <a href="login.html">
+            <button>Iniciar Sesión</button>
+        </a>
+        
+        <a href="registro.html">
+            <button class="btn-secondary">Registrarse</button>
+        </a>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/session.js"></script>
+    <script src="js/messages.js"></script>
+    <script>
+        checkSessionAndRedirect();
+    </script>
+</body>
+</html>
