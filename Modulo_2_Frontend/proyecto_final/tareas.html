@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tareas</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="nav-container">
+        <h3>Sistema de gestión de tareas</h3>
+        <nav class="nav-bar">
+            <a href="perfil.html">Mi Perfil</a>
+            <a href="cambio-password.html">Cambiar Contraseña</a>
+            <a href="tareas.html">Tareas</a>
+            <a href="#" onclick="logout()">Cerrar Sesión</a>
+        </nav>
+    </div>
+    <div id="add-task-form-modal" class="container modal">
+          
+          <h2>Agregar Tarea</h2>
+          <h2 id="error-message-modal"></h2>
+          <form id="add-task-form">
+              <div class="form-group">
+                  <label for="title">Título</label>
+                  <input type="text" id="title" name="title" required>
+              </div>
+              <div class="form-group">
+                  <label for="description">Descripción</label>
+                  <textarea id="description" name="description" required></textarea>
+              </div>
+              <div class="form-group">
+                  <label for="state">Estado</label>
+                  <select id="state" name="state" required>
+                      <option value="Por Hacer">Por Hacer</option>
+                      <option value="En Progreso">En Progreso</option>
+                      <option value="Completada">Completada</option>
+                  </select>
+              </div>
+              <button class="btn-primary" type="submit" onclick="manageTask(event)">Agregar</button>
+              <button class="btn-danger" onclick="closeAddTaskForm()">Cerrar</button>
+          </form>
+
+  </div>
+    <div class="container with-nav">
+        <h1>Tareas</h1>
+        <p id="error-message" class="error-message"></p>
+        <div id="tasks-content">
+            <button class="btn-primary" onclick="showAddTaskForm()">Agregar Tarea</button>
+            <div id="tasks-list">
+              
+            </div>
+        </div>
+    </div>
+    <script src="js/config.js"></script>
+    <script src="js/session.js"></script>
+    <script src="js/messages.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/tasks.js"></script>
+    <script>
+        loadTasks();
+    </script>
+</body>
+</html>
