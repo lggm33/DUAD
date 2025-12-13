@@ -3,6 +3,7 @@ set shell := ["bash", "-cu"]
 PYTHON := "python3"
 VENV_DIR := ".venv"
 PORT := "8000"
+ALEMBIC := "{{VENV_DIR}}/bin/alembic"
 
 # Create a local virtual environment
 venv:
@@ -24,5 +25,16 @@ prod:
 # Run tests
 test:
 	{{VENV_DIR}}/bin/python -m pytest -q
+
+# Database migrations (Alembic)
+# Note: DATABASE_URL is read from the environment (or .env via migrations/env.py).
+db-revision message:
+	APP_ENV=staging {{ALEMBIC}} revision --autogenerate -m "{{message}}"
+
+db-up:
+	APP_ENV=staging {{ALEMBIC}} upgrade head
+
+db-down steps="1":
+	APP_ENV=staging {{ALEMBIC}} downgrade -{{steps}}
 
 
