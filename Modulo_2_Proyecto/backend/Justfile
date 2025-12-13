@@ -1,0 +1,28 @@
+set shell := ["bash", "-cu"]
+
+PYTHON := "python3"
+VENV_DIR := ".venv"
+PORT := "8000"
+
+# Create a local virtual environment
+venv:
+	{{PYTHON}} -m venv {{VENV_DIR}}
+
+# Install dependencies into the venv (pip)
+install: venv
+	{{VENV_DIR}}/bin/pip install --upgrade pip
+	{{VENV_DIR}}/bin/pip install -r requirements.txt
+
+# Run the app locally (development)
+dev:
+	PORT={{PORT}} {{VENV_DIR}}/bin/python main.py
+
+# Run the app like production (gunicorn)
+prod:
+	PORT={{PORT}} {{VENV_DIR}}/bin/gunicorn --bind 0.0.0.0:${PORT} main:app
+
+# Run tests
+test:
+	{{VENV_DIR}}/bin/python -m pytest -q
+
+
