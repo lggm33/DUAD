@@ -15,11 +15,11 @@ install: venv
 
 # Run the app locally (development)
 dev:
-	PORT={{PORT}} {{VENV_DIR}}/bin/python main.py
+	APP_ENV=staging DEBUG=true PORT={{PORT}} {{VENV_DIR}}/bin/python main.py
 
 # Run the app like production (gunicorn)
 prod:
-	PORT={{PORT}} {{VENV_DIR}}/bin/gunicorn --bind 0.0.0.0:${PORT} main:app
+	APP_ENV=production PORT={{PORT}} {{VENV_DIR}}/bin/gunicorn --bind 0.0.0.0:${PORT} main:app
 
 # Run tests
 test:
