@@ -3,7 +3,8 @@ set shell := ["bash", "-cu"]
 PYTHON := "python3"
 VENV_DIR := ".venv"
 PORT := "8000"
-ALEMBIC := "{{VENV_DIR}}/bin/alembic"
+VENV_PYTHON := VENV_DIR + "/bin/python"
+VENV_PIP := VENV_DIR + "/bin/pip"
 
 # Create a local virtual environment
 venv:
@@ -11,12 +12,12 @@ venv:
 
 # Install dependencies into the venv (pip)
 install: venv
-	{{VENV_DIR}}/bin/pip install --upgrade pip
-	{{VENV_DIR}}/bin/pip install -r requirements.txt
+	{{VENV_PIP}} install --upgrade pip
+	{{VENV_PIP}} install -r requirements.txt
 
 # Run the app locally (development)
 dev:
-	APP_ENV=staging DEBUG=true PORT={{PORT}} {{VENV_DIR}}/bin/python main.py
+	APP_ENV=staging DEBUG=true PORT={{PORT}} {{VENV_PYTHON}} main.py
 
 # Run the app like production (gunicorn)
 prod:
@@ -24,17 +25,17 @@ prod:
 
 # Run tests
 test:
-	{{VENV_DIR}}/bin/python -m pytest -q
+	{{VENV_PYTHON}} -m pytest -q
 
 # Database migrations (Alembic)
 # Note: DATABASE_URL is read from the environment (or .env via migrations/env.py).
-db-revision message:
-	APP_ENV=staging {{ALEMBIC}} revision --autogenerate -m "{{message}}"
+db-revision message: install
+	APP_ENV=staging {{VENV_PYTHON}} -m alembic revision --autogenerate -m "{{message}}"
 
-db-up:
-	APP_ENV=staging {{ALEMBIC}} upgrade head
+db-up: install
+	APP_ENV=staging {{VENV_PYTHON}} -m alembic upgrade head
 
-db-down steps="1":
-	APP_ENV=staging {{ALEMBIC}} downgrade -{{steps}}
+db-down steps="1": install
+	APP_ENV=staging {{VENV_PYTHON}} -m alembic downgrade -{{steps}}
 
 

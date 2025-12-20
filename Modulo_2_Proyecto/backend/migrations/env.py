@@ -75,6 +75,7 @@ def _normalize_database_url(raw_url: str) -> str:
 # Import models so they are registered in SQLAlchemy's metadata.
 from app.domain.common.models import Base  # noqa: E402
 import app.domain.users.models  # noqa: E402,F401
+import app.domain.auth.models  # noqa: E402,F401
 
 target_metadata = Base.metadata
 
