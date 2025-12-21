@@ -123,7 +123,7 @@ class RefreshTokenRepository:
         # Find the old token
         old_token = self._session.query(AuthRefreshToken).filter_by(token_hash=old_token_hash).first()
 
-        if old_token is None:
+        if old_token is None or not old_token.is_valid():
             return None
 
         # Revoke the old token

@@ -5,7 +5,8 @@ from datetime import datetime, timezone
 from app.domain.auth.auth_service import (
     AuthService, 
     EmailAlreadyExistsError, 
-    InvalidCredentialsError
+    InvalidCredentialsError,
+    TokenInvalidError
 )
 from app.domain.users.models import User
 from app.domain.users.user_repository import UserRepository
@@ -130,3 +131,46 @@ def test_login_inactive_user(auth_service, mock_user_repo, mock_hasher):
     # Execute & Assert
     with pytest.raises(InvalidCredentialsError):
         auth_service.login("test@example.com", "password")
+
+
+def test_refresh_success(auth_service, mock_refresh_repo, mock_jwt_service):
+    # Setup
+    old_token = "old_token"
+    new_token_plain = "new_token"
+    user = User(id=1, role="USER", token_version=1)
+    new_rt = MagicMock()
+    new_rt.user = user
+    
+    mock_refresh_repo.rotate.return_value = new_rt
+    mock_jwt_service.issue_access.return_value = "new_access_token"
+    
+    # Execute
+    # We can't easily mock the random token generation inside the method to match
+    # but we can check if it returns what the mock says or similar.
+    # Actually, new_token_plain is generated inside.
+    result = auth_service.refresh(old_token)
+    
+    # Assert
+    assert result["access_token"] == "new_access_token"
+    assert "refresh_token" in result
+    mock_refresh_repo.rotate.assert_called_once()
+
+
+def test_refresh_invalid_token(auth_service, mock_refresh_repo):
+    # Setup
+    mock_refresh_repo.rotate.return_value = None
+    
+    # Execute & Assert
+    with pytest.raises(TokenInvalidError):
+        auth_service.refresh("invalid_token")
+
+
+def test_logout_success(auth_service, mock_refresh_repo):
+    # Setup
+    token = "token_to_logout"
+    
+    # Execute
+    auth_service.logout(token)
+    
+    # Assert
+    mock_refresh_repo.revoke.assert_called_once()

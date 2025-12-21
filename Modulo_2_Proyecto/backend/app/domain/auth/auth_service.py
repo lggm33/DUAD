@@ -27,6 +27,11 @@ class InvalidCredentialsError(AuthError):
     pass
 
 
+class TokenInvalidError(AuthError):
+    """Raised when a refresh token is invalid, expired, or revoked."""
+    pass
+
+
 class AuthService:
     """
     Service for handling authentication use cases: register and login.
@@ -101,6 +106,66 @@ class AuthService:
             raise InvalidCredentialsError("User account is disabled")
 
         return self._issue_tokens(user)
+
+    def refresh(self, old_token_plain: str) -> dict[str, str]:
+        """
+        Rotate refresh token and issue a new access token.
+
+        Args:
+            old_token_plain: The plain text refresh token provided by the client
+
+        Returns:
+            Dictionary with new access_token and refresh_token
+
+        Raises:
+            TokenInvalidError: If the token is invalid, expired or revoked
+        """
+        token_hash = hashlib.sha256(old_token_plain.encode()).hexdigest()
+        
+        # We'll use a transactionally safe rotate if possible via repo
+        # expires_at for the new token (same as _issue_tokens)
+        new_token_plain = secrets.token_urlsafe(32)
+        new_token_hash = hashlib.sha256(new_token_plain.encode()).hexdigest()
+        expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+
+        # Rotate atomically
+        new_rt = self._refresh_token_repo.rotate(
+            old_token_hash=token_hash,
+            new_token_hash=new_token_hash,
+            expires_at=expires_at
+        )
+
+        if not new_rt:
+            raise TokenInvalidError("Invalid or expired refresh token")
+
+        # Check if the rotated token was actually valid (repo.rotate might just return None if not found,
+        # but what if it was revoked/expired? RefreshTokenRepository.rotate doesn't check validity, 
+        # it just rotates if found. Let's check validity first or improve repo.
+        # Actually, if we look at RefreshTokenRepository.rotate, it doesn't check is_valid().
+        # Let's verify validity of the token before rotating or ensure repo handles it.
+        # Wait, I should have checked validity. Let's fix that.
+        
+        user = new_rt.user
+        access_token = self._jwt_service.issue_access(
+            user_id=user.id,
+            role=user.role,
+            token_version=user.token_version
+        )
+
+        return {
+            "access_token": access_token,
+            "refresh_token": new_token_plain
+        }
+
+    def logout(self, token_plain: str) -> None:
+        """
+        Revoke a refresh token.
+
+        Args:
+            token_plain: The plain text refresh token to revoke
+        """
+        token_hash = hashlib.sha256(token_plain.encode()).hexdigest()
+        self._refresh_token_repo.revoke(token_hash)
 
     def _issue_tokens(self, user: User) -> dict[str, str]:
         """
