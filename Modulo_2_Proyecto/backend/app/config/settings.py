@@ -91,6 +91,11 @@ class Settings:
     database_url: str
     redis_url: str
     sqlalchemy_echo: bool
+    
+    # JWT Configuration
+    jwt_secret_key: str
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_expires: int = 3600  # 1 hour
 
     @staticmethod
     def from_environment() -> "Settings":
@@ -103,6 +108,11 @@ class Settings:
         secret_key = _must_get(os.getenv("SECRET_KEY"), "SECRET_KEY")
         database_url = _normalize_database_url(_must_get(os.getenv("DATABASE_URL"), "DATABASE_URL"))
         redis_url = _must_get(os.getenv("REDIS_URL"), "REDIS_URL")
+        
+        # JWT Configuration
+        jwt_secret_key = _must_get(os.getenv("JWT_SECRET_KEY"), "JWT_SECRET_KEY")
+        jwt_algorithm = os.getenv("JWT_ALGORITHM", "HS256").strip()
+        jwt_access_token_expires = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRES", "3600"))
 
         return Settings(
             env=env,
@@ -111,6 +121,9 @@ class Settings:
             database_url=database_url,
             redis_url=redis_url,
             sqlalchemy_echo=sqlalchemy_echo,
+            jwt_secret_key=jwt_secret_key,
+            jwt_algorithm=jwt_algorithm,
+            jwt_access_token_expires=jwt_access_token_expires,
         )
 
 
