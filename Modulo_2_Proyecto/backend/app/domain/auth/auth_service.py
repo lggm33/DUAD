@@ -10,6 +10,7 @@ from app.domain.users.user_repository import UserRepository
 from app.domain.users.models import User
 from app.utils.jwt_service import JwtService
 from app.utils.password_hasher import PasswordHasher
+from app.presentation.auth.presenters import AccessClaimsPresenter
 
 
 class AuthError(Exception):
@@ -19,6 +20,11 @@ class AuthError(Exception):
 
 class EmailAlreadyExistsError(AuthError):
     """Raised when an email is already registered."""
+    pass
+
+
+class UsernameAlreadyExistsError(AuthError):
+    """Raised when a username is already taken."""
     pass
 
 
@@ -69,7 +75,11 @@ class AuthService:
         if self._user_repo.get_by_email(email):
             raise EmailAlreadyExistsError("Email already registered")
 
-        # 2. Hash password
+        # 2. Verify username not repeated (if provided)
+        if username and self._user_repo.get_by_username(username):
+            raise UsernameAlreadyExistsError("Username already taken")
+
+        # 3. Hash password
         password_hash = self._password_hasher.hash(password)
 
         # 3. Create user
@@ -153,11 +163,8 @@ class AuthService:
         # Wait, I should have checked validity. Let's fix that.
         
         user = new_rt.user
-        access_token = self._jwt_service.issue_access(
-            user_id=user.id,
-            role=user.role,
-            token_version=user.token_version
-        )
+        claims = AccessClaimsPresenter.from_user(user)
+        access_token = self._jwt_service.encode_payload(claims)
 
         return {
             "access_token": access_token,
@@ -179,11 +186,8 @@ class AuthService:
         Internal helper to issue access and refresh tokens.
         """
         # 1. Issue access JWT
-        access_token = self._jwt_service.issue_access(
-            user_id=user.id,
-            role=user.role,
-            token_version=user.token_version
-        )
+        claims = AccessClaimsPresenter.from_user(user)
+        access_token = self._jwt_service.encode_payload(claims)
 
         # 2. Generate Refresh Token (secure random string)
         refresh_token_plain = secrets.token_urlsafe(32)

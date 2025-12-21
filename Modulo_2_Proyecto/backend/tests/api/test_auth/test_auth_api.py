@@ -3,7 +3,7 @@ from flask import Flask
 from app.domain.users.models import User, UserRole
 from app.extensions import db
 
-def test_register_success(client, session):
+def test_register_success(client, session, cleanup_database):
     """Test successful user registration."""
     data = {
         "email": "newuser@example.com",
@@ -30,7 +30,7 @@ def test_register_success(client, session):
     assert user.name == "New User"
     assert user.username == "newuser_1"
 
-def test_register_duplicate_email(client, session):
+def test_register_duplicate_email(client, session, cleanup_database):
     """Test registration with an already existing email."""
     # Create an initial user
     from app.utils.password_hasher import PasswordHasher
@@ -56,7 +56,7 @@ def test_register_duplicate_email(client, session):
     json_data = response.get_json()
     assert json_data["code"] == "EMAIL_ALREADY_EXISTS"
 
-def test_login_success(client, session):
+def test_login_success(client, session, cleanup_database):
     """Test successful user login."""
     from app.utils.password_hasher import PasswordHasher
     hasher = PasswordHasher()
@@ -83,7 +83,7 @@ def test_login_success(client, session):
     cookies = response.headers.getlist("Set-Cookie")
     assert any("refresh_token=" in c for c in cookies)
 
-def test_login_invalid_credentials(client, session):
+def test_login_invalid_credentials(client, session, cleanup_database):
     """Test login with wrong password."""
     from app.utils.password_hasher import PasswordHasher
     hasher = PasswordHasher()
@@ -107,14 +107,14 @@ def test_login_invalid_credentials(client, session):
     json_data = response.get_json()
     assert json_data["code"] == "INVALID_CREDENTIALS"
 
-def test_register_missing_fields(client):
+def test_register_missing_fields(client, cleanup_database):
     """Test registration with missing fields."""
     response = client.post("/api/v1/auth/register", json={"email": "onlyemail@example.com", "password": "pass"})
     assert response.status_code == 400
     assert response.get_json()["code"] == "VALIDATION_ERROR"
     assert "name" in response.get_json()["message"].lower()
 
-def test_register_malformed_json(client):
+def test_register_malformed_json(client, cleanup_database):
     """Test registration with malformed JSON."""
     response = client.post(
         "/api/v1/auth/register", 
@@ -125,5 +125,63 @@ def test_register_malformed_json(client):
     json_data = response.get_json()
     assert json_data["code"] == "BAD_REQUEST"
     assert "Invalid request body or malformed JSON" in json_data["message"]
-    # Ensure it's not the default HTML error
     assert response.is_json
+
+def test_refresh_success(client, session, cleanup_database):
+    """Test successful token refresh."""
+    from app.utils.password_hasher import PasswordHasher
+    hasher = PasswordHasher()
+    user = User(
+        email="refresh@example.com", 
+        password_hash=hasher.hash("pass"), 
+        name="Refresh User",
+        role=UserRole.USER.value
+    )
+    session.add(user)
+    session.commit()
+
+    # 1. Login to get cookie
+    client.post("/api/v1/auth/login", json={"email": "refresh@example.com", "password": "pass"})
+    
+    # 2. Call refresh
+    response = client.post("/api/v1/auth/refresh")
+    
+    assert response.status_code == 200
+    assert "access_token" in response.get_json()
+    
+    # Verify new refresh token cookie
+    cookies = response.headers.getlist("Set-Cookie")
+    assert any("refresh_token=" in c for c in cookies)
+
+def test_refresh_no_cookie(client, cleanup_database):
+    """Test refresh without cookie."""
+    response = client.post("/api/v1/auth/refresh")
+    assert response.status_code == 401
+    assert response.get_json()["code"] == "MISSING_REFRESH_TOKEN"
+
+def test_logout_success(client, session, cleanup_database):
+    """Test successful logout."""
+    from app.utils.password_hasher import PasswordHasher
+    hasher = PasswordHasher()
+    user = User(
+        email="logout@example.com", 
+        password_hash=hasher.hash("pass"), 
+        name="Logout User",
+        role=UserRole.USER.value
+    )
+    session.add(user)
+    session.commit()
+
+    # 1. Login to get cookie
+    client.post("/api/v1/auth/login", json={"email": "logout@example.com", "password": "pass"})
+    
+    # 2. Call logout
+    response = client.post("/api/v1/auth/logout")
+    
+    assert response.status_code == 204
+    
+    # Verify cookie is cleared
+    cookies = response.headers.getlist("Set-Cookie")
+    assert any("refresh_token=;" in c for c in cookies) or any("refresh_token= " in c for c in cookies)
+    # Check for expiration in 1970, format can vary slightly by library/os
+    assert any("1970" in c and "expires=" in c for c in cookies)

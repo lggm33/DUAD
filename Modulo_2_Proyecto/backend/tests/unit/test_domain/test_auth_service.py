@@ -57,17 +57,22 @@ def test_register_success(auth_service, mock_user_repo, mock_hasher, mock_jwt_se
     user = User(id=1, email=email, password_hash=hashed_password, role="USER", token_version=1)
     mock_user_repo.create_user.return_value = user
     
-    mock_jwt_service.issue_access.return_value = "access_token"
+    mock_jwt_service.encode_payload.return_value = "access_token"
     
     # Execute
-    result = auth_service.register(email, password)
+    result = auth_service.register(email=email, password=password, name="Test User")
     
     # Assert
     assert result["access_token"] == "access_token"
     assert "refresh_token" in result
     mock_user_repo.get_by_email.assert_called_once_with(email)
     mock_hasher.hash.assert_called_once_with(password)
-    mock_user_repo.create_user.assert_called_once_with(email=email, password_hash=hashed_password)
+    mock_user_repo.create_user.assert_called_once_with(
+        email=email, 
+        password_hash=hashed_password,
+        name="Test User",
+        username=None
+    )
     mock_refresh_repo.store.assert_called_once()
 
 
@@ -78,7 +83,7 @@ def test_register_duplicate_email(auth_service, mock_user_repo):
     
     # Execute & Assert
     with pytest.raises(EmailAlreadyExistsError):
-        auth_service.register(email, "password")
+        auth_service.register(email=email, password="password", name="Test User")
 
 
 def test_login_success(auth_service, mock_user_repo, mock_hasher, mock_jwt_service):
@@ -89,7 +94,7 @@ def test_login_success(auth_service, mock_user_repo, mock_hasher, mock_jwt_servi
     
     mock_user_repo.get_by_email.return_value = user
     mock_hasher.verify.return_value = True
-    mock_jwt_service.issue_access.return_value = "access_token"
+    mock_jwt_service.encode_payload.return_value = "access_token"
     
     # Execute
     result = auth_service.login(email, password)
@@ -142,7 +147,7 @@ def test_refresh_success(auth_service, mock_refresh_repo, mock_jwt_service):
     new_rt.user = user
     
     mock_refresh_repo.rotate.return_value = new_rt
-    mock_jwt_service.issue_access.return_value = "new_access_token"
+    mock_jwt_service.encode_payload.return_value = "new_access_token"
     
     # Execute
     # We can't easily mock the random token generation inside the method to match

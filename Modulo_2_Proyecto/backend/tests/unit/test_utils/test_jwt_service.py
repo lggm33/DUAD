@@ -169,3 +169,12 @@ class TestJwtService:
         
         # Check that exp is 7200 seconds (2 hours) after iat
         assert (exp_time - iat_time).total_seconds() == 7200
+
+    def test_encode_payload(self, jwt_service):
+        """Test that encode_payload creates a valid JWT from arbitrary payload."""
+        payload = {"foo": "bar", "baz": 42}
+        token = jwt_service.encode_payload(payload)
+        
+        claims = jwt_service.verify(token)
+        assert claims["foo"] == "bar"
+        assert claims["baz"] == 42

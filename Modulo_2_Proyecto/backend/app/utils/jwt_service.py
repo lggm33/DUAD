@@ -76,6 +76,9 @@ class JwtService:
     ) -> str:
         """
         Issue a new JWT access token.
+        
+        Note: This is deprecated in favor of using AccessClaimsPresenter 
+              and encode_payload().
 
         Args:
             user_id: The user's ID
@@ -87,12 +90,6 @@ class JwtService:
 
         Raises:
             ValueError: If inputs are invalid
-
-        Example:
-            >>> service = JwtService("secret")
-            >>> token = service.issue_access(123, "USER", 1)
-            >>> token.startswith("eyJ")
-            True
         """
         if user_id <= 0:
             raise ValueError("User ID must be positive")
@@ -114,12 +111,23 @@ class JwtService:
             "exp": int(expires_at.timestamp()),  # Expires at
         }
         
+        return self.encode_payload(payload)
+
+    def encode_payload(self, payload: dict[str, Any]) -> str:
+        """
+        Encode a dictionary payload into a signed JWT token.
+
+        Args:
+            payload: Dictionary containing token claims
+
+        Returns:
+            A signed JWT token string
+        """
         token = jwt.encode(
             payload, 
             self._secret_key, 
             algorithm=self._algorithm
         )
-        
         return token
 
     def verify(self, token: str) -> dict[str, Any]:
