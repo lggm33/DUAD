@@ -49,13 +49,15 @@ class AuthService:
         self._password_hasher = password_hasher
         self._jwt_service = jwt_service
 
-    def register(self, email: str, password: str) -> dict[str, str]:
+    def register(self, email: str, password: str, name: str, username: Optional[str] = None) -> dict[str, str]:
         """
         Register a new user and issue initial tokens.
 
         Args:
             email: User's email address
             password: User's plain text password
+            name: User's full name
+            username: User's chosen username (optional)
 
         Returns:
             Dictionary containing access_token and refresh_token
@@ -71,7 +73,12 @@ class AuthService:
         password_hash = self._password_hasher.hash(password)
 
         # 3. Create user
-        user = self._user_repo.create_user(email=email, password_hash=password_hash)
+        user = self._user_repo.create_user(
+            email=email, 
+            password_hash=password_hash,
+            name=name,
+            username=username
+        )
 
         # 4. Issue tokens
         return self._issue_tokens(user)

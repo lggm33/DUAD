@@ -1,15 +1,38 @@
-from __future__ import annotations
-
+import os
 from contextlib import contextmanager
 from typing import Iterator, Optional
-
 from flask import Flask, g
-from sqlalchemy import text
+from sqlalchemy import text, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy import create_engine
 
 from app.config.settings import Settings
+
+
+@event.listens_for(Engine, "before_cursor_execute")
+def _block_unsafe_queries(conn, cursor, statement, parameters, context, execmany):
+    """
+    SQLAlchemy event listener to prevent accidental data loss.
+    """
+    stmt_lower = statement.lower().strip()
+
+    # 1. Block destructive DDL (DROP, TRUNCATE)
+    if "drop" in stmt_lower or "truncate" in stmt_lower:
+        # Ignore drop if it's explicitly allowed via env var
+        if os.getenv("ALLOW_DESTRUCTIVE_DDL") != "true":
+            raise RuntimeError(
+                f"Destructive DDL is blocked: '{statement}'. "
+                "Set ALLOW_DESTRUCTIVE_DDL=true to bypass this safety guard."
+            )
+
+    # 2. Block UPDATE/DELETE without WHERE
+    if stmt_lower.startswith(("update", "delete")) and "where" not in stmt_lower:
+        if os.getenv("ALLOW_UNSAFE_QUERY") != "true":
+            raise RuntimeError(
+                f"Unsafe query blocked (missing WHERE clause): '{statement}'. "
+                "Set ALLOW_UNSAFE_QUERY=true to bypass this safety guard."
+            )
 
 
 class Database:

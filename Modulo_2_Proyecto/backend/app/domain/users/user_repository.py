@@ -35,6 +35,8 @@ class UserRepository:
         self,
         email: str,
         password_hash: str,
+        name: str,
+        username: Optional[str] = None,
         role: str = UserRole.USER.value,
         is_active: bool = True,
     ) -> User:
@@ -47,6 +49,8 @@ class UserRepository:
         Args:
             email: User's email address (must be unique)
             password_hash: Pre-hashed password (e.g., bcrypt hash)
+            name: User's full name
+            username: User's chosen username (optional, unique)
             role: User role (default: "USER")
             is_active: Whether the account is active (default: True)
 
@@ -56,6 +60,8 @@ class UserRepository:
         user = User(
             email=email,
             password_hash=password_hash,
+            name=name,
+            username=username,
             role=role,
             is_active=is_active,
         )

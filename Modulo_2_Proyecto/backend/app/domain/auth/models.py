@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from dataclasses import dataclass
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -34,3 +35,11 @@ class AuthRefreshToken(Base, IntPrimaryKeyMixin, TimestampMixin):
     def is_valid(self) -> bool:
         """Check if the refresh token is valid (not revoked and not expired)."""
         return not self.is_revoked() and not self.is_expired()
+
+@dataclass(frozen=True)
+class Principal:
+    """
+    Object representing the authenticated user in the current request context.
+    """
+    user_id: int
+    role: str

@@ -22,6 +22,8 @@ class User(Base, IntPrimaryKeyMixin, TimestampMixin):
 
     email: Mapped[str] = mapped_column(String(320), nullable=False, unique=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    username: Mapped[str | None] = mapped_column(String(50), nullable=True, unique=True)
 
     # Global RBAC role (ADMIN/USER). Default is USER.
     role: Mapped[str] = mapped_column(String(32), nullable=False, server_default=text("'USER'"))

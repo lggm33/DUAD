@@ -35,6 +35,15 @@ run dev server
 hit /health
 ```
 
+## Seguridad de Base de Datos
+El proyecto incluye guardias en SQLAlchemy para prevenir pérdida accidental de datos:
+- **Bloqueo DDL**: No se permiten comandos `DROP` o `TRUNCATE` por defecto.
+- **Bloqueo de Queries Inseguras**: No se permiten `UPDATE` o `DELETE` sin una clausula `WHERE`.
+
+Para saltar estas protecciones (ej. en migraciones o mantenimiento), usa las variables de entorno:
+- `ALLOW_DESTRUCTIVE_DDL=true`
+- `ALLOW_UNSAFE_QUERY=true`
+
 ## Deploy (Railway/Railpack)
 Railpack detecta proyectos Python por `requirements.txt` (entre otros) y detecta Flask si `flask` y `gunicorn` están instalados.
 

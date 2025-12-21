@@ -106,7 +106,18 @@ class Settings:
         sqlalchemy_echo = _read_bool(os.getenv("SQLALCHEMY_ECHO"), default=False)
 
         secret_key = _must_get(os.getenv("SECRET_KEY"), "SECRET_KEY")
-        database_url = _normalize_database_url(_must_get(os.getenv("DATABASE_URL"), "DATABASE_URL"))
+        
+        # Determine database URL: use DATABASE_URL_TEST if available and in test sync
+        database_url_raw = os.getenv("DATABASE_URL")
+        test_database_url_raw = os.getenv("DATABASE_URL_TEST")
+        
+        # If we are in TESTING mode (set in conftest.py) or just specifically checking, prefer test DB
+        is_testing = _read_bool(os.getenv("TESTING"), default=False)
+        
+        if is_testing and test_database_url_raw:
+            database_url_raw = test_database_url_raw
+            
+        database_url = _normalize_database_url(_must_get(database_url_raw, "DATABASE_URL or DATABASE_URL_TEST"))
         redis_url = _must_get(os.getenv("REDIS_URL"), "REDIS_URL")
         
         # JWT Configuration
