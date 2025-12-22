@@ -30,7 +30,7 @@ server {
   # Backend routes
   location ^~ /api/ {
     # Only allow common API methods
-    limit_except GET POST PUT PATCH DELETE OPTIONS {
+    if ($request_method !~ ^(GET|POST|PUT|PATCH|DELETE|OPTIONS)$) {
       return 405;
     }
 
@@ -50,7 +50,7 @@ server {
   # Frontend routes
   location / {
     # Only allow safe methods for static content
-    limit_except GET HEAD OPTIONS {
+    if ($request_method !~ ^(GET|HEAD|OPTIONS)$) {
       return 405;
     }
 
