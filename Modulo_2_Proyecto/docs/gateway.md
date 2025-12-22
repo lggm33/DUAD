@@ -374,6 +374,76 @@ En este repo, el gateway para Railway ya está preparado para evitarlo:
 
 ---
 
+## Deploy en Railway (Prod) — Checklist y consideraciones (integración)
+
+Fuente: [12 - Deploy en Railway (Prod)](https://www.notion.so/2c8d3a476b268165a54edbef45f20511)
+
+### Servicios esperados (alto nivel)
+
+- **Backend (Flask)**
+- **PostgreSQL**
+- **Redis**
+- **Frontend** (en este repo: Nginx estático sirviendo `dist/`, no `vite preview`)
+- **Gateway** (Nginx reverse proxy)
+
+### Configuración (alto nivel)
+
+- **Variables por servicio**: no hardcodear URLs/secrets en código.
+- **Secrets** (mínimo):
+  - JWT secret
+  - DB URL
+  - Redis URL
+
+### Migraciones (Alembic)
+
+- **Regla**: cada cambio de modelo ⇒ nueva migración.
+- **Ejecución**:
+  - idealmente en “pre-start” del backend o como job previo al start (para no servir tráfico con esquema viejo).
+
+Pseudoflujo:
+
+```
+on deploy:
+  run migrations
+  start web process
+```
+
+### Seeds / datos iniciales
+
+- **Objetivo**: datos mínimos en entornos nuevos sin pasos manuales.
+- **Recomendación**: comando `seed` separado (manual o job) para evitar duplicados.
+- **Regla**: idempotente (si existe, no recrear).
+
+### WebSockets en producción
+
+- Asegurar que el gateway soporta WS (upgrade/keep-alive) si tu realtime lo requiere.
+- Revisar timeouts/keep-alive para evitar cortes.
+
+### Observabilidad / logging
+
+- Logs a `stdout` (Railway los colecta).
+- Nivel recomendado en prod: `INFO`.
+- Evitar logs con datos sensibles (passwords/tokens/contenido privado).
+
+### Sentry (monitoreo)
+
+- Variables:
+  - `SENTRY_DSN`
+  - `ENVIRONMENT` (dev/prod)
+- Capturar: excepciones no manejadas, errores de auth y WS (sin datos sensibles).
+
+### Checklist de release (mínimo)
+
+- [ ] Variables configuradas
+- [ ] DB migrada
+- [ ] Healthcheck OK
+- [ ] Endpoints protegidos
+- [ ] Redis conectado
+- [ ] WS funcionando (si aplica)
+- [ ] Tests pasan en CI
+
+---
+
 ## Gateway en Railway — Pasos atómicos
 
 ### 1) Crear un servicio nuevo: `gateway`
