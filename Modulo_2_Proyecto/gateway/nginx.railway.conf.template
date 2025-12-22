@@ -2,6 +2,11 @@ server {
   listen ${PORT};
   server_name _;
 
+  # Re-resolve Railway internal DNS as services redeploy and their backing IPs change.
+  # The resolver is injected at container start from /etc/resolv.conf.
+  resolver ${RESOLVER} valid=10s ipv6=on;
+  resolver_timeout 5s;
+
   # Standard proxy headers
   proxy_set_header Host $http_host;
   proxy_set_header X-Real-IP $remote_addr;
@@ -10,12 +15,14 @@ server {
 
   # Backend routes
   location ^~ /api/ {
-    proxy_pass ${BACKEND_UPSTREAM};
+    set $backend_upstream "${BACKEND_UPSTREAM}";
+    proxy_pass $backend_upstream;
   }
 
   # Frontend routes
   location / {
-    proxy_pass ${FRONTEND_UPSTREAM};
+    set $frontend_upstream "${FRONTEND_UPSTREAM}";
+    proxy_pass $frontend_upstream;
   }
 }
 

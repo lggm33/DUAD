@@ -351,6 +351,17 @@ Validación:
 - `https://<gateway-domain>/api/v1/health` (debe responder backend)
   - No CORS (mismo origin)
 
+### Nota: ¿por qué a veces “tengo que reiniciar el gateway” tras redeploy del frontend?
+
+En Railway, cuando redeployas `frontend` o `backend`, el hostname `*.railway.internal` puede apuntar a **nuevas IPs**.
+Nginx, por defecto, suele **resolver DNS una vez** y quedarse con esa IP; si el upstream cambia, puedes ver `502/504` hasta reiniciar/recargar.
+
+En este repo, el gateway para Railway ya está preparado para evitarlo:
+
+- Lee el DNS resolver desde `/etc/resolv.conf`
+- Configura `resolver ... valid=10s`
+- Usa `proxy_pass` con variables, forzando re-resolución en runtime
+
 ---
 
 ## Gateway en Railway — Pasos atómicos
