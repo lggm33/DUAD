@@ -362,6 +362,16 @@ En este repo, el gateway para Railway ya está preparado para evitarlo:
 - Configura `resolver ... valid=10s`
 - Usa `proxy_pass` con variables, forzando re-resolución en runtime
 
+### Hardening aplicado al gateway (Railway)
+
+- **Ocultar versión**: `server_tokens off`
+- **Headers de seguridad**: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`
+- **Límites básicos**: `client_max_body_size`, timeouts de body/response
+- **Restricción de métodos**:
+  - `/api/*`: permite `GET/POST/PUT/PATCH/DELETE/OPTIONS`
+  - `/*`: permite `GET/HEAD/OPTIONS`
+- **Host header safety**: el gateway no reenvía el `Host` del cliente al upstream; en su lugar extrae el hostname del upstream y lo usa como `Host` hacia FE/BE
+
 ---
 
 ## Gateway en Railway — Pasos atómicos

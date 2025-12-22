@@ -2,26 +2,67 @@ server {
   listen ${PORT};
   server_name _;
 
+  # Hide version details in responses
+  server_tokens off;
+
   # Re-resolve Railway internal DNS as services redeploy and their backing IPs change.
   # The resolver is injected at container start from /etc/resolv.conf.
   resolver ${RESOLVER} valid=10s ipv6=on;
   resolver_timeout 5s;
 
+  # Basic request limits (defense in depth)
+  client_max_body_size 2m;
+  client_body_timeout 15s;
+  send_timeout 30s;
+
+  # Minimal security headers (defense in depth)
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header X-Frame-Options "DENY" always;
+  add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+  add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
+
   # Standard proxy headers
-  proxy_set_header Host $http_host;
   proxy_set_header X-Real-IP $remote_addr;
   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
   proxy_set_header X-Forwarded-Proto $scheme;
+  proxy_set_header X-Forwarded-Host $host;
 
   # Backend routes
   location ^~ /api/ {
+    # Only allow common API methods
+    limit_except GET POST PUT PATCH DELETE OPTIONS {
+      return 405;
+    }
+
     set $backend_upstream "${BACKEND_UPSTREAM}";
+
+    # Avoid forwarding untrusted client Host header to the backend.
+    # Extract upstream hostname from BACKEND_UPSTREAM (http[s]://host[:port]).
+    set $backend_host "";
+    if ($backend_upstream ~* ^https?://([^/:]+)) {
+      set $backend_host $1;
+    }
+    proxy_set_header Host $backend_host;
+
     proxy_pass $backend_upstream;
   }
 
   # Frontend routes
   location / {
+    # Only allow safe methods for static content
+    limit_except GET HEAD OPTIONS {
+      return 405;
+    }
+
     set $frontend_upstream "${FRONTEND_UPSTREAM}";
+
+    # Avoid forwarding untrusted client Host header to the frontend upstream.
+    set $frontend_host "";
+    if ($frontend_upstream ~* ^https?://([^/:]+)) {
+      set $frontend_host $1;
+    }
+    proxy_set_header Host $frontend_host;
+
     proxy_pass $frontend_upstream;
   }
 }
