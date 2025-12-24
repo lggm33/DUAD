@@ -10,6 +10,7 @@ from app.domain.common.models import Base, IntPrimaryKeyMixin, TimestampMixin
 
 if TYPE_CHECKING:
     from app.domain.auth.models import AuthRefreshToken
+    from app.domain.games.models import Game
 
 
 class UserRole(str, Enum):
@@ -34,3 +35,5 @@ class User(Base, IntPrimaryKeyMixin, TimestampMixin):
     refresh_tokens: Mapped[list["AuthRefreshToken"]] = relationship(
         "AuthRefreshToken", back_populates="user", cascade="all, delete-orphan"
     )
+
+    games: Mapped[list["Game"]] = relationship("Game", back_populates="dm_user")

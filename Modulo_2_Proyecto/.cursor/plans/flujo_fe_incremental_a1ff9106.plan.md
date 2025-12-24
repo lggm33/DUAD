@@ -214,9 +214,3 @@ Pseudocódigo de checklist por PR:
 - FE: Logout Logic & Integration
 - P2:
 - FE: Token Rotation (Silent Refresh)
-
-## Decisión técnica a cerrar temprano (para evitar retrabajo)
-
-En el repo actual hay un cliente HTTP basado en `fetch`, pero el Kanban y la doc hablan de Axios.
-
-- Opción A: migrar a Axios (alineado a tus tasks y a interceptores).
