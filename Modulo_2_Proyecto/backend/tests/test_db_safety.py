@@ -13,6 +13,19 @@ def test_safety_guard_blocks_drop(session):
     
     assert "Destructive DDL is blocked" in str(excinfo.value)
 
+def test_safety_guard_does_not_block_introspection_like_queries(session):
+    """
+    Test that queries containing substrings like 'attisdropped' are NOT blocked.
+
+    Postgres introspection queries used by Alembic often contain columns like pg_attribute.attisdropped.
+    """
+    os.environ["ALLOW_DESTRUCTIVE_DDL"] = "false"
+
+    try:
+        session.execute(text("SELECT 'attisdropped' AS attisdropped"))
+    except RuntimeError as e:
+        pytest.fail(f"Guard should not block introspection queries: {e}")
+
 def test_safety_guard_blocks_unsafe_update(session):
     """Test that UPDATE without WHERE is blocked by default."""
     os.environ["ALLOW_UNSAFE_QUERY"] = "false"

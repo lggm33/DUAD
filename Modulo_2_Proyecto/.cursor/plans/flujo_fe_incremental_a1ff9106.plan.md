@@ -213,4 +213,3 @@ Pseudocódigo de checklist por PR:
 - FE: Auth Flow Navigation
 - FE: Logout Logic & Integration
 - P2:
-- FE: Token Rotation (Silent Refresh)

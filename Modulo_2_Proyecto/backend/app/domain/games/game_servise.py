@@ -1,0 +1,142 @@
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Any, Optional
+
+from app.domain.games.models import (
+    Game,
+    GameInvite,
+    GameRoleInGame,
+    GameMembership,
+    GameMembershipStatus,
+    GameStatus,
+)
+
+from app.domain.games.game_repository import GameRepository
+from app.domain.games.game_invites_repository import GameInvitesRepository
+from app.domain.games.game_membership_repository import GameMembershipRepository
+from app.domain.users.user_repository import UserRepository
+
+
+class GameService:
+    """Service for managing game use cases."""
+
+    def __init__(
+        self,
+        game_repository: GameRepository,
+        game_invites_repository: GameInvitesRepository,
+        game_membership_repository: GameMembershipRepository,
+        user_repository: UserRepository,
+    ) -> None:
+        self._game_repository = game_repository
+        self._game_invites_repository = game_invites_repository
+        self._game_membership_repository = game_membership_repository
+        self._user_repository = user_repository
+
+    def create_game(self, name: str, dm_user_id: int) -> dict[str, Any]:
+        """
+        Create a new game.
+        """
+
+        # Verify DM user exists
+        if not self._user_repository.get_by_id(dm_user_id):
+            raise ValueError("DM user not found")
+
+        # Verify DM user is not already a DM of another active game
+        existing_game = self._game_repository.get_game_by_dm_user_id(dm_user_id)
+
+        if existing_game is not None and existing_game.status == GameStatus.ACTIVE:
+            raise ValueError("DM user is already a DM of another active game")
+
+        # Create game
+        game = Game(name=name, dm_user_id=dm_user_id, status=GameStatus.ACTIVE)
+        new_game = self._game_repository.create_game(game)
+
+        # Create game membership for DM user
+        game_membership = GameMembership(
+            game_id=new_game.id,
+            user_id=dm_user_id,
+            role_in_game=GameRoleInGame.DM,
+            status=GameMembershipStatus.ACTIVE,
+        )
+        self._game_membership_repository.create_game_membership(game_membership)
+
+        # Create game invite for DM user (as creator)
+        import secrets
+
+        invite_code = secrets.token_urlsafe(12)
+        game_invite = GameInvite(
+            game_id=new_game.id,
+            code=invite_code,
+            created_by_user_id=dm_user_id,
+            is_active=True,
+        )
+        self._game_invites_repository.create_game_invite(game_invite)
+
+        return {
+            "game": new_game,
+            "game_invite": game_invite,
+        }
+
+    def join_game(self, game_id: int, user_id: int) -> GameMembership:
+        """
+        Join a game as a player.
+        """
+
+        current_game = self._game_repository.get_game_by_id(game_id)
+        if current_game is None:
+            raise ValueError("Game not found")
+
+        if current_game.status != GameStatus.ACTIVE:
+            raise ValueError("Game is not active")
+
+        # Verify user is not already an active member of the game
+        existing_membership = (
+            self._game_membership_repository.get_game_membership_by_game_id_and_user_id(
+                current_game.id, user_id
+            )
+        )
+        if (
+            existing_membership
+            and existing_membership.status == GameMembershipStatus.ACTIVE
+        ):
+            raise ValueError("User is already an active member of the game")
+
+        # Create or reactivate membership
+        if existing_membership:
+            existing_membership.status = GameMembershipStatus.ACTIVE
+            existing_membership.left_at = None
+            existing_membership.role_in_game = GameRoleInGame.PLAYER
+            # SQLAlchemy tracks changes automatically
+            return existing_membership
+
+        game_membership = GameMembership(
+            game_id=game_id,
+            user_id=user_id,
+            role_in_game=GameRoleInGame.PLAYER,
+            status=GameMembershipStatus.ACTIVE,
+        )
+        return self._game_membership_repository.create_game_membership(game_membership)
+
+    def leave_game(self, game_id: int, user_id: int) -> bool:
+        """
+        Leave a game.
+        """
+        current_game = self._game_repository.get_game_by_id(game_id)
+        if current_game is None:
+            raise ValueError("Game not found")
+
+        membership = (
+            self._game_membership_repository.get_game_membership_by_game_id_and_user_id(
+                current_game.id, user_id
+            )
+        )
+
+        if membership is None or membership.status != GameMembershipStatus.ACTIVE:
+            raise ValueError("User is not an active member of the game")
+
+        # Update game membership status to LEFT
+        membership.status = GameMembershipStatus.LEFT
+        membership.left_at = datetime.now(timezone.utc)
+
+        return True

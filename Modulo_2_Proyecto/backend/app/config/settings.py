@@ -37,11 +37,15 @@ def _load_dotenv_if_present(env: AppEnvironment) -> None:
 
     try:
         from dotenv import load_dotenv
+        from pathlib import Path
     except Exception:
         return
 
     try:
-        load_dotenv(override=False)
+        # Get the backend directory (parent of app/config/)
+        backend_dir = Path(__file__).resolve().parent.parent.parent
+        dotenv_path = backend_dir / ".env"
+        load_dotenv(dotenv_path=dotenv_path, override=False)
     except Exception:
         # Loading .env is a convenience for local development. If the file is not readable
         # (permissions/sandbox), we should not crash the application.

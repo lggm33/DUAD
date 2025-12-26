@@ -11,6 +11,7 @@ from app.domain.common.models import Base, IntPrimaryKeyMixin, TimestampMixin
 if TYPE_CHECKING:
     from app.domain.auth.models import AuthRefreshToken
     from app.domain.games.models import Game
+    from app.domain.games.models import GameInvite, GameMembership
 
 
 class UserRole(str, Enum):
@@ -37,3 +38,9 @@ class User(Base, IntPrimaryKeyMixin, TimestampMixin):
     )
 
     games: Mapped[list["Game"]] = relationship("Game", back_populates="dm_user")
+    game_memberships: Mapped[list["GameMembership"]] = relationship(
+        "GameMembership", back_populates="user", cascade="all, delete-orphan"
+    )
+    created_game_invites: Mapped[list["GameInvite"]] = relationship(
+        "GameInvite", back_populates="created_by_user", cascade="all, delete-orphan"
+    )

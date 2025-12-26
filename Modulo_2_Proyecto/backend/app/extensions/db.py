@@ -1,4 +1,5 @@
 import os
+import re
 from contextlib import contextmanager
 from typing import Iterator, Optional
 from flask import Flask, g
@@ -18,7 +19,8 @@ def _block_unsafe_queries(conn, cursor, statement, parameters, context, execmany
     stmt_lower = statement.lower().strip()
 
     # 1. Block destructive DDL (DROP, TRUNCATE)
-    if "drop" in stmt_lower or "truncate" in stmt_lower:
+    # IMPORTANT: match whole keywords to avoid false positives (e.g. pg_catalog.attisdropped)
+    if re.search(r"\b(drop|truncate)\b", stmt_lower) is not None:
         # Ignore drop if it's explicitly allowed via env var
         if os.getenv("ALLOW_DESTRUCTIVE_DDL") != "true":
             raise RuntimeError(
