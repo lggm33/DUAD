@@ -20,16 +20,17 @@ def get_game_service() -> GameService:
     return GameService(game_repo, game_invites_repo, game_membership_repo, user_repo)
 
 @game_bp.post("/create")
-@roles_required(["ADMIN", "PLAYER"])
+@roles_required("ADMIN", "USER")
 def create_game():
     data = request.get_json()
+    print(data)
     if not data or "name" not in data or "dm_user_id" not in data:
         return error_response("VALIDATION_ERROR", "Name and DM user ID are required", status_code=400)
 
     game_service = get_game_service()
     try:
-        create_game_result = game_service.create_game(data["name"], data["dm_user_id"])
-        return jsonify(GamePresenter.public(create_game_result["game"])), 201
+        create_game_result = game_service.create_game(data["name"], int(data["dm_user_id"]))
+        return jsonify(GamePresenter.public(create_game_result)), 201
     except ValueError as e:
         return error_response("VALIDATION_ERROR", str(e), status_code=400)
 
@@ -42,8 +43,22 @@ def join_game():
 
     game_service = get_game_service()
     try:
-        join_game_result = game_service.join_game(data["game_id"], data["user_id"])
-        return jsonify(GamePresenter.public(join_game_result["game"])), 200
+        membership = game_service.join_game(data["game_id"], data["user_id"])
+        return jsonify(GamePresenter.game_only(membership.game)), 200
+    except ValueError as e:
+        return error_response("VALIDATION_ERROR", str(e), status_code=400)
+
+@game_bp.post("/join-by-code")
+@auth_required
+def join_game_by_code():
+    data = request.get_json()
+    if not data or "invite_code" not in data:
+        return error_response("VALIDATION_ERROR", "Invite code is required", status_code=400)
+
+    game_service = get_game_service()
+    try:
+        result = game_service.join_game_by_code(data["invite_code"], g.auth_user.user_id)
+        return jsonify(GamePresenter.game_only(result["game"])), 200
     except ValueError as e:
         return error_response("VALIDATION_ERROR", str(e), status_code=400)
 
@@ -57,7 +72,7 @@ def leave_game():
     game_service = get_game_service()
     try:
         leave_game_result = game_service.leave_game(data["game_id"], data["user_id"])
-        return jsonify(GamePresenter.public(leave_game_result["game"])), 200
+        return jsonify({"success": leave_game_result}), 200
     except ValueError as e:
         return error_response("VALIDATION_ERROR", str(e), status_code=400)
 
@@ -90,7 +105,7 @@ def get_game_by_id(game_id: int):
         game = game_service.get_game_by_id(game_id, g.auth_user)
         if not game:
             return error_response("GAME_NOT_FOUND", "Game not found", status_code=404)
-        return jsonify(GamePresenter.public(game)), 200
+        return jsonify(GamePresenter.game_only(game)), 200
     except ValueError as e:
         return error_response("FORBIDDEN", str(e), status_code=403)
 

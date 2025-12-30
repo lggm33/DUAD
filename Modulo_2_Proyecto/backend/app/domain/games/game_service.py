@@ -23,6 +23,13 @@ class CreateGameResult(TypedDict):
     game: Game
     game_invite: GameInvite
 
+
+class GameWithRole(TypedDict):
+    game: Game
+    role_in_game: GameRoleInGame
+    membership_status: GameMembershipStatus
+    invite_code: Optional[str]
+
 class GameService:
     """Service for managing game use cases."""
 
@@ -120,6 +127,21 @@ class GameService:
         )
         return self._game_membership_repository.create_game_membership(game_membership)
 
+    def join_game_by_code(self, invite_code: str, user_id: int) -> dict[str, Any]:
+        """
+        Join a game using an invite code.
+        Returns both the game and the membership.
+        """
+        invite = self._game_invites_repository.get_game_invite_by_code(invite_code)
+        if invite is None:
+            raise ValueError("Invalid invite code")
+
+        if not invite.is_valid():
+            raise ValueError("Invite code is no longer valid")
+
+        membership = self.join_game(invite.game_id, user_id)
+        return {"game": invite.game, "membership": membership}
+
     def leave_game(self, game_id: int, user_id: int) -> bool:
         """
         Leave a game.
@@ -171,23 +193,52 @@ class GameService:
         raise ValueError("User is not authorized to kick users from this game")
             
 
-    def get_games(self, user: AuthUser) -> list[Game]:
+    def get_games(self, user: AuthUser) -> list[GameWithRole]:
         """
         Get games based on user role.
-        ADMIN can see all games.
+        ADMIN can see all games (with DM role since they have full access).
         Regular users can only see games they are or were members of.
+        Returns games with the user's role in each game.
+        Includes invite_code only for DM users.
         """
         if user.role == UserRole.ADMIN.value:
             games = self._game_repository.get_games()
-            return games if games else []
+            if not games:
+                return []
+            return [
+                GameWithRole(
+                    game=game,
+                    role_in_game=GameRoleInGame.DM,
+                    membership_status=GameMembershipStatus.ACTIVE,
+                    invite_code=self._get_active_invite_code(game),
+                )
+                for game in games
+            ]
 
         memberships = self._game_membership_repository.get_game_memberships_by_user_id(user.user_id)
         if not memberships:
             return []
 
-        game_ids = [membership.game_id for membership in memberships]
-        games = self._game_repository.get_games_by_ids(game_ids)
-        return games if games else []
+        return [
+            GameWithRole(
+                game=membership.game,
+                role_in_game=membership.role_in_game,
+                membership_status=membership.status,
+                invite_code=self._get_active_invite_code(membership.game) if membership.role_in_game == GameRoleInGame.DM else None,
+            )
+            for membership in memberships
+        ]
+
+    def _get_active_invite_code(self, game: Game) -> Optional[str]:
+        """
+        Get the active invite code for a game.
+        Returns None if no active invite exists.
+        """
+        active_invite = next(
+            (invite for invite in game.invites if invite.is_active),
+            None
+        )
+        return active_invite.code if active_invite else None
 
     def get_game_by_id(self, game_id: int, user: AuthUser) -> Optional[Game]:
         """

@@ -7,9 +7,11 @@
 import { isAuthenticated } from './infrastructure/auth/auth.js'
 
 const routes = {}
+const dynamicRoutes = []
 const protectedRoutes = new Set()
 const guestOnlyRoutes = new Set()
 let currentRoute = null
+let currentParams = {}
 
 /**
  * Register a public route (accessible to everyone)
@@ -36,6 +38,27 @@ export function registerGuestRoute(path, handler) {
   guestOnlyRoutes.add(path)
 }
 
+/**
+ * Register a dynamic protected route with parameters (e.g., /game/:id)
+ * Supports path parameters like :id that will be extracted and passed to handler
+ */
+export function registerDynamicProtectedRoute(pattern, handler) {
+  const paramNames = []
+  const regexPattern = pattern.replace(/:([^/]+)/g, (_, paramName) => {
+    paramNames.push(paramName)
+    return '([^/]+)'
+  })
+  const regex = new RegExp(`^${regexPattern}$`)
+  dynamicRoutes.push({ pattern, regex, paramNames, handler, isProtected: true })
+}
+
+/**
+ * Get current route parameters
+ */
+export function getRouteParams() {
+  return { ...currentParams }
+}
+
 export function navigate(path) {
   if (currentRoute === path) return
   
@@ -46,7 +69,6 @@ export function navigate(path) {
 export function renderRoute(path) {
   // Check if route requires authentication
   if (protectedRoutes.has(path) && !isAuthenticated()) {
-    // Save intended destination for redirect after login
     sessionStorage.setItem('redirect_after_login', path)
     navigate('/sign-in')
     return
@@ -58,7 +80,36 @@ export function renderRoute(path) {
     return
   }
 
-  const handler = routes[path] || routes['/404'] || routes['/']
+  // Try static routes first
+  let handler = routes[path]
+  currentParams = {}
+
+  // If no static route, try dynamic routes
+  if (!handler) {
+    for (const route of dynamicRoutes) {
+      const match = path.match(route.regex)
+      if (match) {
+        // Check authentication for protected dynamic routes
+        if (route.isProtected && !isAuthenticated()) {
+          sessionStorage.setItem('redirect_after_login', path)
+          navigate('/sign-in')
+          return
+        }
+
+        // Extract parameters
+        const params = {}
+        route.paramNames.forEach((name, index) => {
+          params[name] = match[index + 1]
+        })
+        currentParams = params
+        handler = route.handler
+        break
+      }
+    }
+  }
+
+  // Fallback to 404 or home
+  handler = handler || routes['/404'] || routes['/']
   currentRoute = path
   
   if (handler) {

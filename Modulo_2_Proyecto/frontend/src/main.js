@@ -4,12 +4,14 @@ import {
   registerRoute, 
   registerProtectedRoute, 
   registerGuestRoute,
+  registerDynamicProtectedRoute,
   initRouter 
 } from './router.js'
 import { landingPage } from './pages/landing.js'
 import { signInPage } from './pages/sign-in.js'
 import { signUpPage } from './pages/sign-up.js'
 import { dashboardPage } from './pages/dashboard.js'
+import { gamePage } from './pages/game.js'
 
 const app = document.querySelector('#app')
 
@@ -22,6 +24,9 @@ registerGuestRoute('/sign-up', () => signUpPage(app))
 
 // Protected routes (redirect to sign-in if not authenticated)
 registerProtectedRoute('/dashboard', () => dashboardPage(app))
+
+// Dynamic protected routes
+registerDynamicProtectedRoute('/game/:id', () => gamePage(app))
 
 // 404 fallback
 registerRoute('/404', () => landingPage(app))

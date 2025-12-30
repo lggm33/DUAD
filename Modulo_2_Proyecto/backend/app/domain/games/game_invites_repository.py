@@ -41,3 +41,9 @@ class GameInvitesRepository:
         Get all game invites by created by user ID.
         """
         return self._session.query(GameInvite).filter_by(created_by_user_id=created_by_user_id).all()
+
+    def get_game_invite_by_code(self, code: str) -> Optional[GameInvite]:
+        """
+        Get a game invite by its code.
+        """
+        return self._session.query(GameInvite).filter_by(code=code).first()

@@ -1,0 +1,480 @@
+/* ========================================
+   Game Page Styles
+   ======================================== */
+
+.game-container {
+  min-height: 100vh;
+  padding: var(--space-xl);
+  position: relative;
+  overflow: hidden;
+}
+
+/* ========================================
+   Header
+   ======================================== */
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-2xl);
+  padding-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+  gap: var(--space-lg);
+}
+
+.game-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.back-link:hover {
+  color: var(--color-cyan);
+}
+
+.game-title-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.game-title {
+  font-size: 2rem;
+  margin: 0;
+  background: linear-gradient(135deg, var(--color-cyan) 0%, var(--color-turquoise) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.game-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.game-status-badge {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+}
+
+.game-status-badge.status-active {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--color-success);
+}
+
+.game-status-badge.status-ended {
+  background: rgba(100, 116, 139, 0.15);
+  color: var(--color-text-muted);
+}
+
+.game-role-badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+}
+
+.game-role-badge.role-dm {
+  background: rgba(34, 211, 238, 0.15);
+  color: var(--color-cyan);
+}
+
+.game-role-badge.role-player {
+  background: rgba(20, 184, 166, 0.15);
+  color: var(--color-turquoise);
+}
+
+.game-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.btn-danger {
+  color: var(--color-error);
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* ========================================
+   Loading & Error States
+   ======================================== */
+.game-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  padding: var(--space-3xl);
+  color: var(--color-text-muted);
+}
+
+.game-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  padding: var(--space-3xl);
+  text-align: center;
+}
+
+.error-icon {
+  color: var(--color-error);
+  opacity: 0.8;
+}
+
+.game-error h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.game-error p {
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+/* ========================================
+   Game Content
+   ======================================== */
+.game-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+/* ========================================
+   Messages
+   ======================================== */
+.game-message {
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.game-message-success {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid var(--color-success);
+  color: var(--color-success);
+}
+
+.game-message-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--color-error);
+  color: var(--color-error);
+}
+
+.game-message-info {
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid var(--color-cyan);
+  color: var(--color-cyan);
+}
+
+/* ========================================
+   Game Sections
+   ======================================== */
+.game-section {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 1.25rem;
+  margin: 0;
+  color: var(--color-text);
+}
+
+.section-title svg {
+  color: var(--color-cyan);
+}
+
+/* ========================================
+   DM Section
+   ======================================== */
+.dm-section {
+  border-left: 3px solid var(--color-cyan);
+}
+
+.dm-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-lg);
+}
+
+.dm-control-card {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+}
+
+.dm-control-card h3 {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-sm) 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.invite-code-display {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background: var(--color-bg-card);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.invite-code-display code {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  color: var(--color-cyan);
+  word-break: break-all;
+}
+
+.dm-control-hint {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  margin: var(--space-sm) 0 0 0;
+}
+
+/* ========================================
+   Players Section
+   ======================================== */
+.players-section {
+  border-left: 3px solid var(--color-turquoise);
+}
+
+.players-count {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  background: var(--color-bg-elevated);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-full);
+}
+
+.players-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-xl);
+  color: var(--color-text-muted);
+}
+
+.players-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-md);
+}
+
+.player-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  transition: all var(--transition-base);
+}
+
+.player-card:hover {
+  border-color: var(--color-cyan-dark);
+}
+
+.player-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-navy-light) 100%);
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  color: var(--color-cyan);
+  font-size: 0.875rem;
+}
+
+.player-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.player-name {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.player-role {
+  font-size: 0.75rem;
+  padding: 2px var(--space-xs);
+  border-radius: var(--radius-sm);
+  width: fit-content;
+}
+
+.player-role.role-dm {
+  background: rgba(34, 211, 238, 0.15);
+  color: var(--color-cyan);
+}
+
+.player-role.role-player {
+  background: rgba(20, 184, 166, 0.15);
+  color: var(--color-turquoise);
+}
+
+.player-status-badge {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+}
+
+.player-status-badge.status-you {
+  background: rgba(34, 211, 238, 0.1);
+  color: var(--color-cyan);
+}
+
+/* ========================================
+   Actions Section - Coming Soon
+   ======================================== */
+.actions-section {
+  border-left: 3px solid var(--color-warning);
+}
+
+.coming-soon-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-2xl);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.coming-soon-icon {
+  opacity: 0.5;
+  color: var(--color-warning);
+}
+
+.coming-soon-card h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  color: var(--color-text);
+}
+
+.coming-soon-card p {
+  margin: 0;
+  max-width: 360px;
+  font-size: 0.9375rem;
+}
+
+/* ========================================
+   Decorative Orbs
+   ======================================== */
+.game-decoration {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.game-decoration .decoration-orb-1 {
+  width: 600px;
+  height: 600px;
+  background: var(--color-navy);
+  top: -200px;
+  right: -200px;
+}
+
+.game-decoration .decoration-orb-2 {
+  width: 450px;
+  height: 450px;
+  background: var(--color-cyan-dark);
+  bottom: -150px;
+  left: -150px;
+}
+
+/* ========================================
+   Responsive Design
+   ======================================== */
+@media (max-width: 768px) {
+  .game-container {
+    padding: var(--space-md);
+  }
+
+  .game-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .game-title {
+    font-size: 1.5rem;
+  }
+
+  .game-meta {
+    flex-wrap: wrap;
+  }
+
+  .dm-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .players-list {
+    grid-template-columns: 1fr;
+  }
+}
+
