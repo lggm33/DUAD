@@ -1,15 +1,16 @@
 from flask import Flask
 
-from app.api.health_routes import health_bp
-from app.api.auth_routes import auth_bp
-from app.api.user_routes import user_bp
-from app.api.game_routes import game_bp
-
 from app.config import get_settings
 from app.extensions import db, redis_client
 
 
 def create_app() -> Flask:
+    # Import blueprints inside function to avoid circular imports
+    from app.api.health_routes import health_bp
+    from app.api.auth_routes import auth_bp
+    from app.api.user_routes import user_bp
+    from app.api.game_routes import game_bp
+
     settings = get_settings()
 
     app = Flask(__name__)

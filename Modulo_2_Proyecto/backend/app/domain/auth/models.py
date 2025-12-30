@@ -36,8 +36,9 @@ class AuthRefreshToken(Base, IntPrimaryKeyMixin, TimestampMixin):
         """Check if the refresh token is valid (not revoked and not expired)."""
         return not self.is_revoked() and not self.is_expired()
 
+
 @dataclass(frozen=True)
-class Principal:
+class AuthUser:
     """
     Object representing the authenticated user in the current request context.
     """

@@ -34,3 +34,20 @@
 2025/12/22 15:05:00 [warn] 91077#0: *211 upstream server temporarily disabled while connecting to upstream, client: 127.0.0.1, server: _, request: "GET / HTTP/1.1", upstream: "http://[::1]:5173/", host: "localhost:3001"
 2025/12/22 15:05:00 [error] 91077#0: *211 kevent() reported that connect() failed (61: Connection refused) while connecting to upstream, client: 127.0.0.1, server: _, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:5173/", host: "localhost:3001"
 2025/12/22 15:05:00 [warn] 91077#0: *211 upstream server temporarily disabled while connecting to upstream, client: 127.0.0.1, server: _, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:5173/", host: "localhost:3001"
+2025/12/30 11:33:06 [emerg] 54902#0: bind() to 0.0.0.0:3001 failed (48: Address already in use)
+2025/12/30 11:33:06 [emerg] 54902#0: bind() to 0.0.0.0:3001 failed (48: Address already in use)
+2025/12/30 11:33:06 [emerg] 54902#0: bind() to 0.0.0.0:3001 failed (48: Address already in use)
+2025/12/30 11:33:06 [emerg] 54902#0: bind() to 0.0.0.0:3001 failed (48: Address already in use)
+2025/12/30 11:33:06 [emerg] 54902#0: bind() to 0.0.0.0:3001 failed (48: Address already in use)
+2025/12/30 11:33:06 [emerg] 54902#0: still could not bind()
+2025/12/30 11:39:53 [emerg] 63186#0: bind() to 0.0.0.0:3001 failed (48: Address already in use)
+2025/12/30 11:39:53 [emerg] 63186#0: bind() to 0.0.0.0:3001 failed (48: Address already in use)
+2025/12/30 11:39:53 [emerg] 63186#0: bind() to 0.0.0.0:3001 failed (48: Address already in use)
+2025/12/30 11:39:53 [emerg] 63186#0: bind() to 0.0.0.0:3001 failed (48: Address already in use)
+2025/12/30 11:39:53 [emerg] 63186#0: bind() to 0.0.0.0:3001 failed (48: Address already in use)
+2025/12/30 11:40:11 [error] 63537#0: *1 kevent() reported that connect() failed (61: Connection refused) while connecting to upstream, client: 127.0.0.1, server: _, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:5173/", host: "localhost:3001"
+2025/12/30 11:40:11 [warn] 63537#0: *1 upstream server temporarily disabled while connecting to upstream, client: 127.0.0.1, server: _, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:5173/", host: "localhost:3001"
+2025/12/30 11:42:47 [error] 66231#0: *1 kevent() reported that connect() failed (61: Connection refused) while connecting to upstream, client: 127.0.0.1, server: _, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:5173/", host: "localhost:3001"
+2025/12/30 11:42:47 [warn] 66231#0: *1 upstream server temporarily disabled while connecting to upstream, client: 127.0.0.1, server: _, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:5173/", host: "localhost:3001"
+2025/12/30 11:42:59 [error] 66502#0: *1 kevent() reported that connect() failed (61: Connection refused) while connecting to upstream, client: 127.0.0.1, server: _, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:5173/", host: "localhost:3001", referrer: "http://localhost:3001/"
+2025/12/30 11:42:59 [warn] 66502#0: *1 upstream server temporarily disabled while connecting to upstream, client: 127.0.0.1, server: _, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:5173/", host: "localhost:3001", referrer: "http://localhost:3001/"
