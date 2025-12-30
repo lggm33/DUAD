@@ -1,9 +1,7 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
   server: {
     // When Vite is behind a reverse proxy (like our local Nginx gateway),
     // Vite will validate the Host header to prevent DNS rebinding attacks.
@@ -23,3 +21,4 @@ export default defineConfig({
     allowedHosts: ['lyfter-fe-stating.up.railway.app'],
   },
 })
+
