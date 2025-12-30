@@ -173,12 +173,21 @@ class GameService:
 
     def get_games(self, user: AuthUser) -> list[Game]:
         """
-        Get all games.
+        Get games based on user role.
+        ADMIN can see all games.
+        Regular users can only see games they are or were members of.
         """
-        games = self._game_repository.get_games()
-        if games is None:
+        if user.role == UserRole.ADMIN.value:
+            games = self._game_repository.get_games()
+            return games if games else []
+
+        memberships = self._game_membership_repository.get_game_memberships_by_user_id(user.user_id)
+        if not memberships:
             return []
-        return games
+
+        game_ids = [membership.game_id for membership in memberships]
+        games = self._game_repository.get_games_by_ids(game_ids)
+        return games if games else []
 
     def get_game_by_id(self, game_id: int, user: AuthUser) -> Optional[Game]:
         """

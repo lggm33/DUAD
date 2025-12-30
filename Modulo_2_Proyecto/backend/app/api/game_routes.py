@@ -76,10 +76,10 @@ def kick_user_from_game():
         return error_response("FORBIDDEN", str(e), status_code=403)
 
 @game_bp.get("/list-all")
-@roles_required(["ADMIN"])
+@auth_required
 def list_all_games():
     game_service = get_game_service()
-    games = game_service.get_games()
+    games = game_service.get_games(g.auth_user)
     return jsonify(GamePresenter.collection(games)), 200
 
 @game_bp.get("/<int:game_id>")
