@@ -1,7 +1,8 @@
 import template from './landing.html?raw'
+import { Navbar, Footer } from '../components/index.js'
 
 export function landingPage(app) {
-  app.innerHTML = template
+  app.innerHTML = Navbar() + template + Footer()
   setupSmoothScroll()
 }
 
@@ -19,4 +20,3 @@ function setupSmoothScroll() {
     })
   })
 }
-

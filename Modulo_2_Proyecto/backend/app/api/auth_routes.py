@@ -98,12 +98,11 @@ def logout():
 def _build_auth_response(tokens: dict[str, str], status_code: int) -> Response:
     response = make_response(jsonify({"access_token": tokens["access_token"]}), status_code)
     
-    # Secure cookie configuration following ADR-009
     response.set_cookie(
         key="refresh_token",
         value=tokens["refresh_token"],
         httponly=True,
-        secure=True,  # In production must be True, but for unified domain/reverse proxy it's safer
+        secure=True,  
         samesite="Lax",
         path="/api/v1/auth"
     )
