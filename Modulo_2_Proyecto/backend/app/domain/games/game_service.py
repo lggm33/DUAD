@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any, Optional, TypedDict
 
 from app.domain.games.models import (
     Game,
@@ -16,7 +16,12 @@ from app.domain.games.game_repository import GameRepository
 from app.domain.games.game_invites_repository import GameInvitesRepository
 from app.domain.games.game_membership_repository import GameMembershipRepository
 from app.domain.users.user_repository import UserRepository
+from app.domain.auth.models import AuthUser
+from app.domain.users.models import UserRole
 
+class CreateGameResult(TypedDict):
+    game: Game
+    game_invite: GameInvite
 
 class GameService:
     """Service for managing game use cases."""
@@ -33,7 +38,7 @@ class GameService:
         self._game_membership_repository = game_membership_repository
         self._user_repository = user_repository
 
-    def create_game(self, name: str, dm_user_id: int) -> dict[str, Any]:
+    def create_game(self, name: str, dm_user_id: int) -> CreateGameResult:
         """
         Create a new game.
         """
@@ -73,10 +78,7 @@ class GameService:
         )
         self._game_invites_repository.create_game_invite(game_invite)
 
-        return {
-            "game": new_game,
-            "game_invite": game_invite,
-        }
+        return CreateGameResult(game=new_game, game_invite=game_invite)
 
     def join_game(self, game_id: int, user_id: int) -> GameMembership:
         """
@@ -90,20 +92,20 @@ class GameService:
         if current_game.status != GameStatus.ACTIVE:
             raise ValueError("Game is not active")
 
-        # Verify user is not already an active member of the game
+        # Verify user is not already an active member or kicked from the game
         existing_membership = (
             self._game_membership_repository.get_game_membership_by_game_id_and_user_id(
                 current_game.id, user_id
             )
         )
-        if (
-            existing_membership
-            and existing_membership.status == GameMembershipStatus.ACTIVE
-        ):
-            raise ValueError("User is already an active member of the game")
-
-        # Create or reactivate membership
         if existing_membership:
+            if existing_membership.status == GameMembershipStatus.ACTIVE:
+                raise ValueError("User is already an active member of the game")
+            if existing_membership.status == GameMembershipStatus.KICKED:
+                raise ValueError("User has been kicked from this game")
+
+        # Reactivate membership if user previously left
+        if existing_membership and existing_membership.status == GameMembershipStatus.LEFT:
             existing_membership.status = GameMembershipStatus.ACTIVE
             existing_membership.left_at = None
             existing_membership.role_in_game = GameRoleInGame.PLAYER
@@ -139,4 +141,66 @@ class GameService:
         membership.status = GameMembershipStatus.LEFT
         membership.left_at = datetime.now(timezone.utc)
 
+        if membership.role_in_game == GameRoleInGame.DM:
+            current_game.status = GameStatus.ENDED
+
         return True
+        
+    def kick_user_from_game(self, game_id: int, user_id: int, auth_user: AuthUser) -> bool:
+        """
+        Kick a user from a game.
+        """
+        membership = self._game_membership_repository.get_game_membership_by_game_id_and_user_id(game_id, user_id)
+        if membership is None:
+            raise ValueError("User to kick is not a member of the game")
+        
+        if auth_user.role == UserRole.ADMIN.value:
+            membership.status = GameMembershipStatus.KICKED
+            return True
+        
+        if auth_user.role == UserRole.USER.value:
+            user_membership = self._game_membership_repository.get_game_membership_by_game_id_and_user_id(game_id, auth_user.user_id)
+            if user_membership is None:
+                raise ValueError("User is not a member of the game")
+            if user_membership.status != GameMembershipStatus.ACTIVE:
+                raise ValueError("User is not an active member of the game")
+            if user_membership.role_in_game != GameRoleInGame.DM:
+                raise ValueError("User is not a DM of the game")
+            membership.status = GameMembershipStatus.KICKED
+            return True
+        raise ValueError("User is not authorized to kick users from this game")
+            
+
+    def get_games(self, user: AuthUser) -> list[Game]:
+        """
+        Get all games.
+        """
+        games = self._game_repository.get_games()
+        if games is None:
+            return []
+        return games
+
+    def get_game_by_id(self, game_id: int, user: AuthUser) -> Optional[Game]:
+        """
+        Get a game by its ID.
+        Returns None if game not found.
+        Raises ValueError if user doesn't have permission.
+        """
+        game = self._game_repository.get_game_by_id(game_id)
+
+        if game is None:
+            return None
+        
+        # ADMIN can see any game
+        if user.role == UserRole.ADMIN.value:
+            return game
+        
+        # Other users can only see games they are active members of
+        membership = self._game_membership_repository.get_game_membership_by_game_id_and_user_id(game_id, user.user_id)
+        if membership is None:
+            raise ValueError("User is not a member of this game")
+        
+        if membership.status != GameMembershipStatus.ACTIVE:
+            raise ValueError("User is not an active member of this game")
+        
+        return game

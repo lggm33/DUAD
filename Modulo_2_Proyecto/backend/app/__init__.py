@@ -3,6 +3,8 @@ from flask import Flask
 from app.api.health_routes import health_bp
 from app.api.auth_routes import auth_bp
 from app.api.user_routes import user_bp
+from app.api.game_routes import game_bp
+
 from app.config import get_settings
 from app.extensions import db, redis_client
 
@@ -22,7 +24,7 @@ def create_app() -> Flask:
     app.register_blueprint(health_bp, url_prefix="/api/v1")
     app.register_blueprint(auth_bp)
     app.register_blueprint(user_bp)
-
+    app.register_blueprint(game_bp)
     _register_error_handlers(app)
 
     return app
