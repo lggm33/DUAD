@@ -30,6 +30,14 @@ class GameWithRole(TypedDict):
     membership_status: GameMembershipStatus
     invite_code: Optional[str]
 
+
+class GameMemberInfo(TypedDict):
+    membership: GameMembership
+    user_id: int
+    username: Optional[str]
+    name: str
+
+
 class GameService:
     """Service for managing game use cases."""
 
@@ -264,3 +272,38 @@ class GameService:
             raise ValueError("User is not an active member of this game")
         
         return game
+
+    def get_game_members(self, game_id: int, user: AuthUser) -> list[GameMemberInfo]:
+        """
+        Get all members of a game.
+        Returns list of GameMemberInfo with user data.
+        Raises ValueError if user doesn't have permission.
+        """
+        game = self._game_repository.get_game_by_id(game_id)
+        
+        if game is None:
+            raise ValueError("Game not found")
+        
+        # Verify user has access to view members
+        if user.role != UserRole.ADMIN.value:
+            membership = self._game_membership_repository.get_game_membership_by_game_id_and_user_id(game_id, user.user_id)
+            if membership is None:
+                raise ValueError("User is not a member of this game")
+            if membership.status != GameMembershipStatus.ACTIVE:
+                raise ValueError("User is not an active member of this game")
+        
+        memberships = self._game_membership_repository.get_game_memberships_by_game_id(game_id)
+        
+        user_ids = [m.user_id for m in memberships]
+        users = self._user_repository.get_users_by_ids(user_ids)
+        users_map = {u.id: u for u in users}
+        
+        return [
+            GameMemberInfo(
+                membership=m,
+                user_id=m.user_id,
+                username=users_map[m.user_id].username if m.user_id in users_map else None,
+                name=users_map[m.user_id].name if m.user_id in users_map else "Unknown",
+            )
+            for m in memberships
+        ]

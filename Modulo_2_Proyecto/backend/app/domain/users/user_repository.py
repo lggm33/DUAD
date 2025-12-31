@@ -55,6 +55,20 @@ class UserRepository:
         """
         return self._session.get(User, user_id)
 
+    def get_users_by_ids(self, user_ids: list[int]) -> list[User]:
+        """
+        Find users by a list of IDs.
+
+        Args:
+            user_ids: List of user IDs to find
+
+        Returns:
+            List of Users found
+        """
+        if not user_ids:
+            return []
+        return self._session.query(User).filter(User.id.in_(user_ids)).all()
+
     def create_user(
         self,
         email: str,

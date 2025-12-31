@@ -43,7 +43,7 @@ def join_game():
 
     game_service = get_game_service()
     try:
-        membership = game_service.join_game(data["game_id"], data["user_id"])
+        membership = game_service.join_game(int(data["game_id"]), int(data["user_id"]))
         return jsonify(GamePresenter.game_only(membership.game)), 200
     except ValueError as e:
         return error_response("VALIDATION_ERROR", str(e), status_code=400)
@@ -71,7 +71,7 @@ def leave_game():
 
     game_service = get_game_service()
     try:
-        leave_game_result = game_service.leave_game(data["game_id"], data["user_id"])
+        leave_game_result = game_service.leave_game(int(data["game_id"]), int(data["user_id"]))
         return jsonify({"success": leave_game_result}), 200
     except ValueError as e:
         return error_response("VALIDATION_ERROR", str(e), status_code=400)
@@ -85,7 +85,7 @@ def kick_user_from_game():
 
     game_service = get_game_service()
     try:
-        game_service.kick_user_from_game(data["game_id"], data["user_id"], g.auth_user)
+        game_service.kick_user_from_game(int(data["game_id"]), int(data["user_id"]), g.auth_user)
         return jsonify(True), 200
     except ValueError as e:
         return error_response("FORBIDDEN", str(e), status_code=403)
@@ -108,5 +108,19 @@ def get_game_by_id(game_id: int):
         return jsonify(GamePresenter.game_only(game)), 200
     except ValueError as e:
         return error_response("FORBIDDEN", str(e), status_code=403)
+
+@game_bp.get("/<int:game_id>/members")
+@auth_required
+def get_game_members(game_id: int):
+    game_service = get_game_service()
+    try:
+        members = game_service.get_game_members(game_id, g.auth_user)
+        return jsonify(GamePresenter.members_collection(members)), 200
+    except ValueError as e:
+        if "not found" in str(e).lower():
+            return error_response("GAME_NOT_FOUND", str(e), status_code=404)
+        return error_response("FORBIDDEN", str(e), status_code=403)
+
+
 
 

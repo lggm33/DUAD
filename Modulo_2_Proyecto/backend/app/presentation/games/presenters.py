@@ -1,6 +1,6 @@
 from app.presentation.base import Presenter
-from app.domain.games.models import Game, GameInvite
-from app.domain.games.game_service import CreateGameResult, GameWithRole
+from app.domain.games.models import Game, GameInvite, GameMembership
+from app.domain.games.game_service import CreateGameResult, GameWithRole, GameMemberInfo
 from typing import Any
 
 class GamePresenter(Presenter):
@@ -63,3 +63,27 @@ class GamePresenter(Presenter):
         Returns a list of public dictionaries for a collection of Games with roles.
         """
         return [GamePresenter.game_with_role(game) for game in games]
+
+    @staticmethod
+    def member(member_info: GameMemberInfo) -> dict[str, Any]:
+        """
+        Returns a public dictionary for a GameMemberInfo.
+        """
+        membership = member_info["membership"]
+        return {
+            "id": membership.id,
+            "user_id": member_info["user_id"],
+            "username": member_info["username"],
+            "name": member_info["name"],
+            "role_in_game": membership.role_in_game.value if hasattr(membership.role_in_game, 'value') else membership.role_in_game,
+            "status": membership.status.value if hasattr(membership.status, 'value') else membership.status,
+            "joined_at": membership.joined_at.isoformat() if membership.joined_at else None,
+            "left_at": membership.left_at.isoformat() if membership.left_at else None,
+        }
+
+    @staticmethod
+    def members_collection(members: list[GameMemberInfo]) -> list[dict[str, Any]]:
+        """
+        Returns a list of public dictionaries for a collection of GameMemberInfo.
+        """
+        return [GamePresenter.member(member) for member in members]

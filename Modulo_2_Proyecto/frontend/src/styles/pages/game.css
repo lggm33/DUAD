@@ -126,6 +126,10 @@
   color: var(--color-text-muted);
 }
 
+.game-loading[hidden] {
+  display: none;
+}
+
 .game-error {
   display: flex;
   flex-direction: column;
@@ -134,6 +138,10 @@
   gap: var(--space-lg);
   padding: var(--space-3xl);
   text-align: center;
+}
+
+.game-error[hidden] {
+  display: none;
 }
 
 .error-icon {
@@ -162,6 +170,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-xl);
+}
+
+.game-content[hidden] {
+  display: none;
 }
 
 /* ========================================
@@ -311,10 +323,18 @@
   color: var(--color-text-muted);
 }
 
+.players-loading[hidden] {
+  display: none;
+}
+
 .players-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--space-md);
+}
+
+.players-list[hidden] {
+  display: none;
 }
 
 .player-card {
@@ -352,6 +372,12 @@
   gap: var(--space-xs);
 }
 
+.player-badges {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
 .player-name {
   font-weight: 500;
   color: var(--color-text);
@@ -386,6 +412,41 @@
 .player-status-badge.status-you {
   background: rgba(34, 211, 238, 0.1);
   color: var(--color-cyan);
+}
+
+.player-card-inactive {
+  opacity: 0.6;
+}
+
+.player-membership-status {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 2px var(--space-xs);
+  border-radius: var(--radius-sm);
+  width: fit-content;
+}
+
+.player-membership-status.status-left {
+  background: rgba(100, 116, 139, 0.15);
+  color: var(--color-text-muted);
+}
+
+.player-membership-status.status-kicked {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-error);
+}
+
+.btn-kick {
+  padding: var(--space-xs);
+  color: var(--color-error);
+  transition: all var(--transition-fast);
+}
+
+.btn-kick:hover {
+  color: #fff;
+  background: var(--color-error);
 }
 
 /* ========================================
@@ -446,6 +507,139 @@
   background: var(--color-cyan-dark);
   bottom: -150px;
   left: -150px;
+}
+
+/* ========================================
+   Leave Game Modal
+   ======================================== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-overlay[hidden] {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-container {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+  max-width: 420px;
+  width: 90%;
+  animation: modalSlideIn 0.25s ease-out;
+  box-shadow: var(--shadow-lg);
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.modal-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-full);
+}
+
+.modal-icon-warning {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-error);
+}
+
+.modal-icon-dm {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--color-warning);
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  margin: 0;
+  text-align: center;
+}
+
+.modal-message {
+  text-align: center;
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-xl) 0;
+  line-height: 1.6;
+}
+
+.modal-message strong {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+.modal-actions {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: center;
+}
+
+.modal-actions .btn {
+  min-width: 120px;
+}
+
+.btn-danger-solid {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  color: white;
+  border-color: var(--color-error);
+  font-weight: 600;
+}
+
+.btn-danger-solid:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-danger-solid:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-danger-solid .btn-loader {
+  border-color: rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+}
+
+.modal-actions .btn [hidden] {
+  display: none;
 }
 
 /* ========================================

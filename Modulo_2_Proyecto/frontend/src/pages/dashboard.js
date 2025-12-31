@@ -1,5 +1,5 @@
 import template from './dashboard.html?raw'
-import { Footer } from '../components/index.js'
+import { Footer, showConfirmModal } from '../components/index.js'
 import { navigate } from '../router.js'
 import { getAccessToken, clearTokens, getUserFromToken } from '../infrastructure/auth/auth.js'
 
@@ -17,9 +17,18 @@ async function initDashboard() {
 
 function setupLogout() {
   const logoutBtn = document.getElementById('logout-btn')
-  logoutBtn.addEventListener('click', () => {
-    clearTokens()
-    navigate('/sign-in')
+  logoutBtn.addEventListener('click', async () => {
+    await showConfirmModal({
+      title: 'Logout',
+      message: 'Are you sure you want to logout?',
+      confirmText: 'Logout',
+      iconType: 'leave',
+      iconClass: 'modal-icon-warning',
+      onConfirm: () => {
+        clearTokens()
+        navigate('/sign-in')
+      }
+    })
   })
 }
 
@@ -87,7 +96,7 @@ function renderGamesList(games, container) {
           <span class="game-role ${roleClass}">${roleLabel}</span>
           <span class="game-date">Created ${formatDate(game.created_at)}</span>
         </div>
-        ${game.invite_code ? `
+        ${game.invite_code && membershipStatus === 'ACTIVE' ? `
           <div class="game-invite-section">
             <div class="invite-code-display">
               <span class="invite-label">Invite Code:</span>
