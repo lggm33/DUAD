@@ -13,6 +13,30 @@ const guestOnlyRoutes = new Set()
 let currentRoute = null
 let currentParams = {}
 
+const ROUTE_CHANGE_EVENT = 'beforeRouteChange'
+
+/**
+ * Emit a custom event before route changes
+ * Allows pages to clean up resources before navigation
+ */
+function emitBeforeRouteChange(fromPath, toPath) {
+  const event = new CustomEvent(ROUTE_CHANGE_EVENT, {
+    detail: { from: fromPath, to: toPath }
+  })
+  window.dispatchEvent(event)
+}
+
+/**
+ * Subscribe to route change events for cleanup purposes
+ * @param {Function} callback - Receives { from, to } paths
+ * @returns {Function} Unsubscribe function
+ */
+export function onBeforeRouteChange(callback) {
+  const handler = (event) => callback(event.detail)
+  window.addEventListener(ROUTE_CHANGE_EVENT, handler)
+  return () => window.removeEventListener(ROUTE_CHANGE_EVENT, handler)
+}
+
 /**
  * Register a public route (accessible to everyone)
  */
@@ -62,6 +86,7 @@ export function getRouteParams() {
 export function navigate(path) {
   if (currentRoute === path) return
   
+  emitBeforeRouteChange(currentRoute, path)
   window.history.pushState({}, '', path)
   renderRoute(path)
 }
@@ -129,6 +154,7 @@ export function getRedirectAfterLogin() {
 export function initRouter() {
   // Handle browser back/forward buttons
   window.addEventListener('popstate', () => {
+    emitBeforeRouteChange(currentRoute, window.location.pathname)
     renderRoute(window.location.pathname)
   })
 

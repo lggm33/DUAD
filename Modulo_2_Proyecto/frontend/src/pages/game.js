@@ -1,6 +1,6 @@
 import template from './game.html?raw'
 import { Footer, showConfirmModal, GameChat } from '../components/index.js'
-import { navigate, getRouteParams } from '../router.js'
+import { navigate, getRouteParams, onBeforeRouteChange } from '../router.js'
 import { getUserFromToken } from '../infrastructure/auth/auth.js'
 import { fetchWithAuth, escapeHtml, getInitials } from '../utils/index.js'
 
@@ -8,6 +8,7 @@ let currentGame = null
 let currentUserRole = null
 let gameChat = null
 let currentUser = null
+let unsubscribeRouteChange = null
 
 export function gamePage(app) {
   app.innerHTML = template + Footer()
@@ -277,6 +278,21 @@ async function handleKickUser(gameId, userId) {
 
 function setupGameActions(game) {
   window.addEventListener('beforeunload', disconnectChat)
+  
+  unsubscribeRouteChange = onBeforeRouteChange(() => {
+    cleanupGamePage()
+  })
+}
+
+function cleanupGamePage() {
+  disconnectChat()
+  
+  if (unsubscribeRouteChange) {
+    unsubscribeRouteChange()
+    unsubscribeRouteChange = null
+  }
+  
+  window.removeEventListener('beforeunload', disconnectChat)
 }
 
 function disconnectChat() {
