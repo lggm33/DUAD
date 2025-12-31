@@ -53,6 +53,55 @@
     <!-- Messages -->
     <div id="game-message" class="game-message" hidden></div>
 
+    <!-- Chat Section -->
+    <section class="game-section chat-section">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          Adventure Log
+        </h2>
+        <div id="chat-connection-status" class="chat-connection-status">
+          <span class="status-indicator status-disconnected"></span>
+          <span class="status-text">Disconnected</span>
+        </div>
+      </div>
+
+      <div class="chat-container">
+        <!-- Chat Messages -->
+        <div id="chat-messages" class="chat-messages">
+          <div id="chat-loading" class="chat-loading">
+            <span class="loader"></span>
+            <span>Loading messages...</span>
+          </div>
+          <div id="chat-empty" class="chat-empty" hidden>
+            <p>No messages yet. Start the adventure!</p>
+          </div>
+        </div>
+
+        <!-- Chat Input -->
+        <div class="chat-input-container">
+          <form id="chat-form" class="chat-form">
+            <input 
+              type="text" 
+              id="chat-input" 
+              class="chat-input" 
+              placeholder="Write your message..." 
+              autocomplete="off"
+              maxlength="1000"
+            />
+            <button type="submit" id="chat-send-btn" class="btn btn-primary chat-send-btn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+
     <!-- DM Section - Only visible to Dungeon Master -->
     <section id="dm-section" class="game-section dm-section" hidden>
       <div class="section-header">
@@ -105,54 +154,7 @@
       <div id="players-list" class="players-list" hidden></div>
     </section>
 
-    <!-- Chat Section -->
-    <section class="game-section chat-section">
-      <div class="section-header">
-        <h2 class="section-title">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-          </svg>
-          Adventure Log
-        </h2>
-        <div id="chat-connection-status" class="chat-connection-status">
-          <span class="status-indicator status-disconnected"></span>
-          <span class="status-text">Disconnected</span>
-        </div>
-      </div>
-
-      <div class="chat-container">
-        <!-- Chat Messages -->
-        <div id="chat-messages" class="chat-messages">
-          <div id="chat-loading" class="chat-loading">
-            <span class="loader"></span>
-            <span>Loading messages...</span>
-          </div>
-          <div id="chat-empty" class="chat-empty" hidden>
-            <p>No messages yet. Start the adventure!</p>
-          </div>
-        </div>
-
-        <!-- Chat Input -->
-        <div class="chat-input-container">
-          <form id="chat-form" class="chat-form">
-            <input 
-              type="text" 
-              id="chat-input" 
-              class="chat-input" 
-              placeholder="Write your message..." 
-              autocomplete="off"
-              maxlength="1000"
-            />
-            <button type="submit" id="chat-send-btn" class="btn btn-primary chat-send-btn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-            </button>
-          </form>
-        </div>
-      </div>
-    </section>
+    
   </div>
 
   <div class="game-decoration">

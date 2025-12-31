@@ -12,6 +12,7 @@ class ChatMessageData(TypedDict):
     game_id: int
     user_id: int
     username: str
+    name: str
     content: str
     created_at: str
 
@@ -47,12 +48,14 @@ class ChatService:
     def message_to_dict(self, message: ChatMessage) -> ChatMessageData:
         """
         Convert a ChatMessage to a dictionary for JSON serialization.
+        Uses the eagerly loaded user relationship from the ChatMessage model.
         """
         return ChatMessageData(
             id=message.id,
             game_id=message.game_id,
             user_id=message.user_id,
-            username=message.user.username if message.user else "Unknown",
+            username=message.user.username,
+            name=message.user.name,
             content=message.content,
             created_at=message.created_at.isoformat(),
         )

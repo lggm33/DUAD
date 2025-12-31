@@ -59,11 +59,12 @@ def register_socketio_events(socketio, app):
                 authenticated_users[request.sid] = {
                     "user_id": user.id,
                     "username": user.username,
+                    "name": user.name,
                     "game_id": None
                 }
 
                 logger.info(f"[SocketIO] User {user.username} (id={user.id}) connected")
-                emit("auth_ok", {"user_id": user.id, "username": user.username})
+                emit("auth_ok", {"user_id": user.id, "username": user.username, "name": user.name})
 
         except Exception as e:
             logger.error(f"[SocketIO] Auth failed: {e}")
@@ -79,7 +80,7 @@ def register_socketio_events(socketio, app):
                 # Notify others in the game room
                 emit(
                     "user_left",
-                    {"user_id": user["user_id"], "username": user["username"]},
+                    {"user_id": user["user_id"], "username": user["username"], "name": user["name"]},
                     room=f"game_{user['game_id']}",
                 )
 
@@ -122,7 +123,7 @@ def register_socketio_events(socketio, app):
                 # Notify others in the room
                 emit(
                     "user_joined",
-                    {"user_id": user["user_id"], "username": user["username"]},
+                    {"user_id": user["user_id"], "username": user["username"], "name": user["name"]},
                     room=room_name,
                     include_self=False,
                 )
@@ -150,7 +151,7 @@ def register_socketio_events(socketio, app):
         # Notify others
         emit(
             "user_left",
-            {"user_id": user["user_id"], "username": user["username"]},
+            {"user_id": user["user_id"], "username": user["username"], "name": user["name"]},
             room=room_name,
         )
 

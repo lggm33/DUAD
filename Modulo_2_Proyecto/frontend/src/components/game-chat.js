@@ -130,11 +130,13 @@ export class GameChat {
   }
 
   handleUserJoined(data) {
-    this.addSystemMessage(`${data.username} joined the adventure`)
+    console.log('[GameChat] User joined:', data)
+    this.addSystemMessage(`${data.username || data.name} joined the adventure`)
   }
 
   handleUserLeft(data) {
-    this.addSystemMessage(`${data.username} left the adventure`)
+    console.log('[GameChat] User left:', data)
+    this.addSystemMessage(`${data.username || data.name} left the adventure`)
   }
 
   handleSocketError(data) {
@@ -143,6 +145,7 @@ export class GameChat {
   }
 
   renderMessage(message) {
+
     const chatMessagesEl = document.getElementById('chat-messages')
     const isOwn = message.user_id.toString() === this.currentUser?.sub.toString()
     
@@ -156,11 +159,11 @@ export class GameChat {
     
     messageEl.innerHTML = `
       <div class="chat-message-avatar">
-        <span>${this.getInitials(message.username || 'Unknown')}</span>
+        <span>${this.getInitials(message.username || message.name || 'Unknown')}</span>
       </div>
       <div class="chat-message-content">
         <div class="chat-message-header">
-          <span class="chat-message-username">${this.escapeHtml(message.username || 'Unknown')}</span>
+          <span class="chat-message-username">${this.escapeHtml(message.username || message.name || 'Unknown')}</span>
           <span class="chat-message-time">${time}</span>
         </div>
         <div class="chat-message-text">${this.escapeHtml(message.content)}</div>
