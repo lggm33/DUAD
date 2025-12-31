@@ -1,7 +1,8 @@
 import template from './dashboard.html?raw'
 import { Footer, showConfirmModal } from '../components/index.js'
 import { navigate } from '../router.js'
-import { getAccessToken, clearTokens, getUserFromToken } from '../infrastructure/auth/auth.js'
+import { clearTokens, getUserFromToken } from '../infrastructure/auth/auth.js'
+import { fetchWithAuth, escapeHtml, formatDate } from '../utils/index.js'
 
 export function dashboardPage(app) {
   app.innerHTML = template + Footer()
@@ -211,18 +212,6 @@ function setupJoinGameForm() {
   })
 }
 
-async function fetchWithAuth(url, options = {}) {
-  const token = getAccessToken()
-  
-  return fetch(url, {
-    ...options,
-    headers: {
-      ...options.headers,
-      'Authorization': `Bearer ${token}`
-    }
-  })
-}
-
 function setButtonLoading(button, isLoading) {
   const btnText = button.querySelector('.btn-text')
   const btnLoader = button.querySelector('.btn-loader')
@@ -242,22 +231,6 @@ function showMessage(message, type = 'info') {
 function hideMessage() {
   const messageEl = document.getElementById('dashboard-message')
   messageEl.hidden = true
-}
-
-function escapeHtml(text) {
-  const div = document.createElement('div')
-  div.textContent = text
-  return div.innerHTML
-}
-
-function formatDate(dateString) {
-  if (!dateString) return 'Unknown'
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric',
-    year: 'numeric'
-  })
 }
 
 function setupGameActions(container) {
