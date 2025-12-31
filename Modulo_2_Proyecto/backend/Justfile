@@ -15,13 +15,29 @@ install: venv
 	{{VENV_PIP}} install --upgrade pip
 	{{VENV_PIP}} install -r requirements.txt
 
-# Run the app locally (development)
+# Run the app locally with gevent (development with WebSocket support)
 dev:
 	APP_ENV=staging DEBUG=true PORT={{PORT}} {{VENV_PYTHON}} main.py
 
-# Run the app like production (gunicorn)
+# Run the app with gunicorn + gevent (simulates production locally)
+# Flask-SocketIO requires geventwebsocket worker for WebSocket support
+dev-gunicorn:
+	APP_ENV=staging DEBUG=true PORT={{PORT}} {{VENV_DIR}}/bin/gunicorn \
+		-k geventwebsocket.gunicorn.workers.GeventWebSocketWorker \
+		-w 1 \
+		-b 0.0.0.0:{{PORT}} \
+		--reload \
+		main:app
+
+# Run the app in production mode (gunicorn + gevent workers)
+# Note: -w 1 because SocketIO connections are in-memory per process
+# For horizontal scaling, configure Redis message_queue in app/__init__.py
 prod:
-	APP_ENV=production PORT={{PORT}} {{VENV_DIR}}/bin/gunicorn --bind 0.0.0.0:${PORT} main:app
+	APP_ENV=production {{VENV_DIR}}/bin/gunicorn \
+		-k geventwebsocket.gunicorn.workers.GeventWebSocketWorker \
+		-w 1 \
+		-b 0.0.0.0:${PORT} \
+		main:app
 
 # Run tests
 test:
@@ -37,5 +53,3 @@ db-up: install
 
 db-down steps="1": install
 	APP_ENV=staging {{VENV_PYTHON}} -m alembic downgrade -{{steps}}
-
-

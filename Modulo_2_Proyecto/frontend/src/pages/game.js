@@ -2,9 +2,12 @@ import template from './game.html?raw'
 import { Footer, showConfirmModal } from '../components/index.js'
 import { navigate, getRouteParams } from '../router.js'
 import { getAccessToken, getUserFromToken } from '../infrastructure/auth/auth.js'
+import { SocketIOClient } from '../infrastructure/realtime/socketio.js'
 
 let currentGame = null
 let currentUserRole = null
+let socketClient = null
+let currentUser = null
 
 export function gamePage(app) {
   app.innerHTML = template + Footer()
@@ -19,6 +22,7 @@ async function initGame() {
     return
   }
 
+  currentUser = getUserFromToken()
   await loadGame(gameId)
 }
 
@@ -44,6 +48,9 @@ async function loadGame(gameId) {
     renderGameInfo(game)
     setupGameActions(game)
     await loadPlayers(gameId)
+    
+    // Initialize chat
+    await initChat(gameId)
 
   } catch (error) {
     loadingEl.hidden = true
@@ -138,6 +145,9 @@ async function showLeaveModal(gameId, user) {
       iconType: 'leave',
       iconClass,
       onConfirm: async () => {
+        // Disconnect WebSocket before leaving
+        disconnectChat()
+        
         const response = await fetchWithAuth('/api/v1/game/leave', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -173,9 +183,6 @@ async function loadPlayers(gameId) {
     throw new Error('Failed to load current user')
   }
   const members = await membersResponse.json()
-  console.log(members)
-  const currentUser = members.find(member => member.user_id.toString() === user?.sub.toString())
-  console.log(currentUser)
   
   loadingEl.hidden = true
   listEl.hidden = false
@@ -269,8 +276,224 @@ async function handleKickUser(gameId, userId) {
 }
 
 function setupGameActions(game) {
-  // Placeholder for future game actions
+  // Setup chat form
+  setupChatForm()
+  
+  // Cleanup on page navigation
+  window.addEventListener('beforeunload', disconnectChat)
 }
+
+// ========================================
+// Chat Functions
+// ========================================
+
+async function initChat(gameId) {
+  updateConnectionStatus('connecting')
+  
+  // Load message history first
+  await loadMessageHistory(gameId)
+  
+  // Initialize Socket.IO connection
+  socketClient = new SocketIOClient({
+    onConnected: () => {
+      updateConnectionStatus('connected')
+      // Join the game room after connection
+      socketClient.joinGame(parseInt(gameId))
+    },
+    onDisconnected: () => {
+      updateConnectionStatus('disconnected')
+    },
+    onError: (error) => {
+      console.error('[Chat] Socket.IO error:', error)
+      updateConnectionStatus('disconnected')
+    },
+    onAuthOk: (data) => {
+      console.log('[Chat] Authenticated as:', data.username)
+    }
+  })
+
+  // Register event handlers
+  socketClient.on('joined_game', handleJoinedGame)
+  socketClient.on('chat_message', handleChatMessageCreated)
+  socketClient.on('user_joined', handleUserJoined)
+  socketClient.on('user_left', handleUserLeft)
+  socketClient.on('error', handleWsError)
+
+  // Connect with JWT token
+  const token = getAccessToken()
+  socketClient.connect(token)
+}
+
+async function loadMessageHistory(gameId) {
+  const chatLoadingEl = document.getElementById('chat-loading')
+  const chatEmptyEl = document.getElementById('chat-empty')
+  const chatMessagesEl = document.getElementById('chat-messages')
+
+  try {
+    const response = await fetchWithAuth(`/api/v1/game/${gameId}/messages?limit=50`)
+    
+    if (!response.ok) {
+      throw new Error('Failed to load messages')
+    }
+
+    const messages = await response.json()
+    
+    chatLoadingEl.hidden = true
+    
+    if (messages.length === 0) {
+      chatEmptyEl.hidden = false
+    } else {
+      chatEmptyEl.hidden = true
+      messages.forEach(msg => renderChatMessage(msg))
+      scrollToBottom()
+    }
+  } catch (error) {
+    console.error('[Chat] Failed to load history:', error)
+    chatLoadingEl.hidden = true
+    chatEmptyEl.hidden = false
+  }
+}
+
+function setupChatForm() {
+  const form = document.getElementById('chat-form')
+  const input = document.getElementById('chat-input')
+  const sendBtn = document.getElementById('chat-send-btn')
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault()
+    
+    const content = input.value.trim()
+    if (!content) return
+    
+    if (!socketClient || !socketClient.isConnected) {
+      showMessage('Not connected to chat', 'error')
+      return
+    }
+
+    socketClient.sendChatMessage(parseInt(currentGame.id), content)
+    input.value = ''
+    input.focus()
+  })
+
+  // Enable/disable send button based on input
+  input.addEventListener('input', () => {
+    sendBtn.disabled = !input.value.trim()
+  })
+  
+  sendBtn.disabled = true
+}
+
+function handleJoinedGame(data) {
+  console.log('[Chat] Joined game:', data.game_id)
+  addSystemMessage(`You joined the adventure`)
+}
+
+function handleChatMessageCreated(message) {
+  // Socket.IO sends the message directly, not wrapped in {message: ...}
+  
+  // Hide empty state if visible
+  const chatEmptyEl = document.getElementById('chat-empty')
+  chatEmptyEl.hidden = true
+  
+  renderChatMessage(message)
+  scrollToBottom()
+}
+
+function handleUserJoined(data) {
+  addSystemMessage(`${data.username} joined the adventure`)
+}
+
+function handleUserLeft(data) {
+  addSystemMessage(`${data.username} left the adventure`)
+}
+
+function handleWsError(data) {
+  console.error('[Chat] Server error:', data.code, data.message)
+  showMessage(`Chat error: ${data.message}`, 'error')
+}
+
+function renderChatMessage(message) {
+  const chatMessagesEl = document.getElementById('chat-messages')
+  const isOwn = message.user_id.toString() === currentUser?.sub.toString()
+  
+  const messageEl = document.createElement('div')
+  messageEl.className = `chat-message ${isOwn ? 'is-own' : ''}`
+  
+  const time = new Date(message.created_at).toLocaleTimeString([], { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  })
+  
+  messageEl.innerHTML = `
+    <div class="chat-message-avatar">
+      <span>${getInitials(message.username || 'Unknown')}</span>
+    </div>
+    <div class="chat-message-content">
+      <div class="chat-message-header">
+        <span class="chat-message-username">${escapeHtml(message.username || 'Unknown')}</span>
+        <span class="chat-message-time">${time}</span>
+      </div>
+      <div class="chat-message-text">${escapeHtml(message.content)}</div>
+    </div>
+  `
+  
+  chatMessagesEl.appendChild(messageEl)
+}
+
+function addSystemMessage(text) {
+  const chatMessagesEl = document.getElementById('chat-messages')
+  
+  // Hide empty state if visible
+  const chatEmptyEl = document.getElementById('chat-empty')
+  chatEmptyEl.hidden = true
+  
+  const messageEl = document.createElement('div')
+  messageEl.className = 'chat-message chat-message-system'
+  messageEl.textContent = text
+  
+  chatMessagesEl.appendChild(messageEl)
+  scrollToBottom()
+}
+
+function scrollToBottom() {
+  const chatMessagesEl = document.getElementById('chat-messages')
+  chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight
+}
+
+function updateConnectionStatus(status) {
+  const statusEl = document.getElementById('chat-connection-status')
+  const indicator = statusEl.querySelector('.status-indicator')
+  const text = statusEl.querySelector('.status-text')
+  
+  indicator.className = 'status-indicator'
+  
+  switch (status) {
+    case 'connected':
+      indicator.classList.add('status-connected')
+      text.textContent = 'Connected'
+      break
+    case 'connecting':
+      indicator.classList.add('status-connecting')
+      text.textContent = 'Connecting...'
+      break
+    case 'disconnected':
+    default:
+      indicator.classList.add('status-disconnected')
+      text.textContent = 'Disconnected'
+      break
+  }
+}
+
+function disconnectChat() {
+  if (socketClient) {
+    socketClient.disconnect()
+    socketClient = null
+  }
+}
+
+// ========================================
+// Utility Functions
+// ========================================
 
 function showError(message) {
   const loadingEl = document.getElementById('game-loading')
@@ -319,4 +542,3 @@ function escapeHtml(text) {
   div.textContent = text
   return div.innerHTML
 }
-

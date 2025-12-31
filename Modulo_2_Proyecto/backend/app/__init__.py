@@ -1,7 +1,11 @@
 from flask import Flask
+from flask_socketio import SocketIO
 
 from app.config import get_settings
 from app.extensions import db, redis_client
+
+# Global SocketIO instance
+socketio = SocketIO()
 
 
 def create_app() -> Flask:
@@ -10,6 +14,7 @@ def create_app() -> Flask:
     from app.api.auth_routes import auth_bp
     from app.api.user_routes import user_bp
     from app.api.game_routes import game_bp
+    from app.realtime.socketio_events import register_socketio_events
 
     settings = get_settings()
 
@@ -20,6 +25,18 @@ def create_app() -> Flask:
 
     db.init_app(app, settings)
     redis_client.init_app(app, settings)
+
+    # Initialize SocketIO with gevent async mode
+    socketio.init_app(
+        app,
+        async_mode="gevent",
+        cors_allowed_origins="*",  # Configure for production
+        logger=True,
+        engineio_logger=True if settings.debug else False,
+    )
+
+    # Register SocketIO event handlers
+    register_socketio_events(socketio, app)
 
     # Register Blueprints
     app.register_blueprint(health_bp, url_prefix="/api/v1")

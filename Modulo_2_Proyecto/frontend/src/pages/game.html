@@ -105,27 +105,52 @@
       <div id="players-list" class="players-list" hidden></div>
     </section>
 
-    <!-- Game Actions Section (Placeholder for future features) -->
-    <section class="game-section actions-section">
+    <!-- Chat Section -->
+    <section class="game-section chat-section">
       <div class="section-header">
         <h2 class="section-title">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
           </svg>
-          Adventures Await
+          Adventure Log
         </h2>
-      </div>
-      <div class="coming-soon-card">
-        <div class="coming-soon-icon">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-          </svg>
+        <div id="chat-connection-status" class="chat-connection-status">
+          <span class="status-indicator status-disconnected"></span>
+          <span class="status-text">Disconnected</span>
         </div>
-        <h3>Coming Soon</h3>
-        <p>Character sheets, dice rolling, notes, and more features are on the way!</p>
+      </div>
+
+      <div class="chat-container">
+        <!-- Chat Messages -->
+        <div id="chat-messages" class="chat-messages">
+          <div id="chat-loading" class="chat-loading">
+            <span class="loader"></span>
+            <span>Loading messages...</span>
+          </div>
+          <div id="chat-empty" class="chat-empty" hidden>
+            <p>No messages yet. Start the adventure!</p>
+          </div>
+        </div>
+
+        <!-- Chat Input -->
+        <div class="chat-input-container">
+          <form id="chat-form" class="chat-form">
+            <input 
+              type="text" 
+              id="chat-input" 
+              class="chat-input" 
+              placeholder="Write your message..." 
+              autocomplete="off"
+              maxlength="1000"
+            />
+            <button type="submit" id="chat-send-btn" class="btn btn-primary chat-send-btn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </form>
+        </div>
       </div>
     </section>
   </div>

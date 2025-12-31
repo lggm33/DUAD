@@ -6,6 +6,8 @@ from app.domain.games.game_repository import GameRepository
 from app.domain.games.game_invites_repository import GameInvitesRepository
 from app.domain.games.game_membership_repository import GameMembershipRepository
 from app.domain.users.user_repository import UserRepository
+from app.domain.chat.chat_repository import ChatRepository
+from app.domain.chat.chat_service import ChatService
 from app.presentation.games.presenters import GamePresenter
 from app.extensions import db
 
@@ -120,6 +122,33 @@ def get_game_members(game_id: int):
         if "not found" in str(e).lower():
             return error_response("GAME_NOT_FOUND", str(e), status_code=404)
         return error_response("FORBIDDEN", str(e), status_code=403)
+
+
+@game_bp.get("/<int:game_id>/messages")
+@auth_required
+def get_game_messages(game_id: int):
+    """Get chat message history for a game."""
+    # First verify user has access to this game
+    game_service = get_game_service()
+    try:
+        game = game_service.get_game_by_id(game_id, g.auth_user)
+        if not game:
+            return error_response("GAME_NOT_FOUND", "Game not found", status_code=404)
+    except ValueError as e:
+        return error_response("FORBIDDEN", str(e), status_code=403)
+
+    # Get message history
+    limit = request.args.get("limit", 50, type=int)
+    limit = min(limit, 100)  # Cap at 100 messages
+
+    session = db.get_session()
+    chat_repo = ChatRepository(session)
+    chat_service = ChatService(chat_repo)
+
+    messages = chat_service.get_history(game_id, limit)
+    messages_data = [chat_service.message_to_dict(msg) for msg in messages]
+
+    return jsonify(messages_data), 200
 
 
 

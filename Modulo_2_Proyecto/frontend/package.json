@@ -10,7 +10,9 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
-  "dependencies": {},
+  "dependencies": {
+    "socket.io-client": "4.7.4"
+  },
   "devDependencies": {
     "@eslint/js": "9.39.1",
     "eslint": "9.39.1",
