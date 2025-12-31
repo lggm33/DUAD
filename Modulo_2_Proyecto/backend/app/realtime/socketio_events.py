@@ -180,10 +180,7 @@ def register_socketio_events(socketio, app):
             with app.app_context():
                 session = db.get_session()
                 chat_repo = ChatRepository(session)
-                membership_repo = GameMembershipRepository(session)
-                user_repo = UserRepository(session)
-
-                chat_service = ChatService(chat_repo, membership_repo, user_repo)
+                chat_service = ChatService(chat_repo)
                 message = chat_service.send_message(game_id, user["user_id"], content)
                 message_data = chat_service.message_to_dict(message)
 
