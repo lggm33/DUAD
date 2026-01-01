@@ -482,6 +482,50 @@ class EncounterService:
     # Helper methods
     # =========================================================================
 
+    def get_encounter_state_for_reconnect(
+        self,
+        encounter_id: int,
+        user_id: int,
+        recent_logs_limit: int = 20,
+    ) -> dict[str, Any]:
+        """
+        Get full encounter state for client reconnection.
+
+        Returns encounter info, current combat state, and recent logs.
+        Used when a client reconnects mid-combat to sync their state.
+
+        Args:
+            encounter_id: The encounter ID
+            user_id: The user requesting the state
+            recent_logs_limit: Max number of recent logs to include
+
+        Returns:
+            Dictionary with encounter, state, and recent_logs
+
+        Raises:
+            ValueError: If encounter not found or user not a member
+        """
+        encounter = self._encounter_repo.get_by_id(encounter_id)
+        if not encounter:
+            raise ValueError("Encounter not found")
+
+        self._verify_is_member(encounter.game_id, user_id)
+
+        state = self._encounter_repo.get_state(encounter_id)
+        recent_logs = self._encounter_repo.get_combat_logs(
+            encounter_id, limit=recent_logs_limit
+        )
+
+        return {
+            "encounter": encounter,
+            "state": state,
+            "recent_logs": recent_logs,
+        }
+
+    # =========================================================================
+    # Helper methods
+    # =========================================================================
+
     def _build_initial_combatants_state(
         self,
         encounter: Encounter,
