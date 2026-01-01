@@ -15,6 +15,7 @@ from app.domain.common.models import Base, IntPrimaryKeyMixin, TimestampMixin
 if TYPE_CHECKING:
     from app.domain.users.models import User
     from app.domain.games.ruleset_models import RulesetTemplate
+    from app.domain.characters.models import Character
 
 
 class GameStatus(str, Enum):
@@ -78,6 +79,9 @@ class Game(Base, IntPrimaryKeyMixin, TimestampMixin):
     )
     invites: Mapped[list["GameInvite"]] = relationship(
         "GameInvite", back_populates="game", cascade="all, delete-orphan"
+    )
+    characters: Mapped[list["Character"]] = relationship(
+        "Character", back_populates="game", cascade="all, delete-orphan"
     )
 
     def requires_character_approval(self) -> bool:

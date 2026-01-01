@@ -26,6 +26,8 @@ def upgrade() -> None:
         "OPEN", "DM_APPROVAL",
         name="character_creation_mode"
     )
+    # Actually create the enum in the database BEFORE using it
+    character_creation_mode.create(op.get_bind(), checkfirst=True)
 
     # Add ruleset_template_id column
     op.add_column(

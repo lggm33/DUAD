@@ -79,6 +79,7 @@ import app.domain.auth.models
 import app.domain.games.models  
 import app.domain.games.ruleset_models  
 import app.domain.chat.models  
+import app.domain.characters.models  
 
 target_metadata = Base.metadata
 
