@@ -1,5 +1,5 @@
 import template from './sign-up.html?raw'
-import { navigate } from '../router.js'
+import { navigate, getRedirectAfterLogin } from '../router.js'
 import { setTokens } from '../infrastructure/auth/auth.js'
 
 export function signUpPage(app) {
@@ -48,8 +48,9 @@ function setupSignUpForm() {
 
       // Store tokens using auth module
       setTokens(data.access_token, data.refresh_token)
-      // Redirect to sign in
-      navigate('/dashboard')
+      // Redirect to intended destination or dashboard
+      const redirectPath = getRedirectAfterLogin()
+      navigate(redirectPath)
     } catch (error) {
       showError(error.message)
     } finally {

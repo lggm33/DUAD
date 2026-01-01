@@ -37,11 +37,10 @@ export class GameChat {
         this.updateConnectionStatus('disconnected')
       },
       onError: (error) => {
-        console.error('[GameChat] Socket.IO error:', error)
         this.updateConnectionStatus('disconnected')
       },
       onAuthOk: (data) => {
-        console.log('[GameChat] Authenticated as:', data.username)
+        // Do nothing
       }
     })
 
@@ -117,7 +116,6 @@ export class GameChat {
   }
 
   handleJoinedGame(data) {
-    console.log('[GameChat] Joined game:', data.game_id)
     this.addSystemMessage('You joined the adventure')
   }
 
@@ -130,12 +128,10 @@ export class GameChat {
   }
 
   handleUserJoined(data) {
-    console.log('[GameChat] User joined:', data)
     this.addSystemMessage(`${data.username || data.name} joined the adventure`)
   }
 
   handleUserLeft(data) {
-    console.log('[GameChat] User left:', data)
     this.addSystemMessage(`${data.username || data.name} left the adventure`)
   }
 

@@ -12,6 +12,7 @@ import { signInPage } from './pages/sign-in.js'
 import { signUpPage } from './pages/sign-up.js'
 import { dashboardPage } from './pages/dashboard.js'
 import { gamePage } from './pages/game.js'
+import { joinPage } from './pages/join.js'
 
 const app = document.querySelector('#app')
 
@@ -27,6 +28,7 @@ registerProtectedRoute('/dashboard', () => dashboardPage(app))
 
 // Dynamic protected routes
 registerDynamicProtectedRoute('/game/:id', () => gamePage(app))
+registerDynamicProtectedRoute('/join/:code', () => joinPage(app))
 
 // 404 fallback
 registerRoute('/404', () => landingPage(app))
