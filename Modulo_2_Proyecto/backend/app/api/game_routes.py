@@ -5,10 +5,14 @@ from app.domain.games.game_service import GameService
 from app.domain.games.game_repository import GameRepository
 from app.domain.games.game_invites_repository import GameInvitesRepository
 from app.domain.games.game_membership_repository import GameMembershipRepository
+from app.domain.games.models import GameRoleInGame, GameMembershipStatus
+from app.domain.games.schemas.validators import RulesValidationError
 from app.domain.users.user_repository import UserRepository
+from app.domain.users.models import UserRole
 from app.domain.chat.chat_repository import ChatRepository
 from app.domain.chat.chat_service import ChatService
 from app.presentation.games.presenters import GamePresenter
+from app.presentation.games.ruleset_presenters import GameRulesPresenter
 from app.extensions import db
 
 game_bp = Blueprint("game", __name__, url_prefix="/api/v1/game")
@@ -151,5 +155,98 @@ def get_game_messages(game_id: int):
     return jsonify(messages_data), 200
 
 
+# =============================================================================
+# Rules Management Endpoints
+# =============================================================================
 
 
+def _get_game_membership(game_service: GameService, game_id: int, user_id: int):
+    """Helper to get membership repository and check membership."""
+    session = db.get_session()
+    membership_repo = GameMembershipRepository(session)
+    return membership_repo.get_game_membership_by_game_id_and_user_id(game_id, user_id)
+
+
+@game_bp.get("/<int:game_id>/rules")
+@auth_required
+def get_game_rules(game_id: int):
+    """
+    Get effective rules for a game.
+    
+    Returns the merged rules (template base_rules + custom_rules).
+    Accessible by any active member of the game.
+    """
+    game_service = get_game_service()
+    
+    try:
+        game = game_service.get_game_by_id(game_id, g.auth_user)
+        if not game:
+            return error_response("GAME_NOT_FOUND", "Game not found", status_code=404)
+    except ValueError as e:
+        return error_response("FORBIDDEN", str(e), status_code=403)
+    
+    effective_rules = game_service.get_game_effective_rules(game)
+    
+    return jsonify(GameRulesPresenter.effective_rules(game, effective_rules)), 200
+
+
+@game_bp.put("/<int:game_id>/rules")
+@auth_required
+def update_game_rules(game_id: int):
+    """
+    Update custom_rules for a game.
+    
+    Only the DM of the game can update the rules.
+    
+    Request body:
+    {
+        "custom_rules": { ... }  // Partial rules to override template
+    }
+    """
+    game_service = get_game_service()
+    
+    try:
+        game = game_service.get_game_by_id(game_id, g.auth_user)
+        if not game:
+            return error_response("GAME_NOT_FOUND", "Game not found", status_code=404)
+    except ValueError as e:
+        return error_response("FORBIDDEN", str(e), status_code=403)
+    
+    # Check if user is DM or ADMIN
+    is_admin = g.auth_user.role == UserRole.ADMIN.value
+    is_dm = game.dm_user_id == g.auth_user.user_id
+    
+    if not is_admin and not is_dm:
+        # Additional check via membership
+        membership = _get_game_membership(game_service, game_id, g.auth_user.user_id)
+        if membership is None or membership.role_in_game != GameRoleInGame.DM:
+            return error_response(
+                "FORBIDDEN",
+                "Only the DM can update game rules",
+                status_code=403,
+            )
+    
+    data = request.get_json()
+    if data is None:
+        return error_response(
+            "VALIDATION_ERROR",
+            "Request body is required",
+            status_code=400,
+        )
+    
+    custom_rules = data.get("custom_rules")
+    
+    try:
+        game_service.set_game_custom_rules(game, custom_rules)
+        db.get_session().commit()
+    except RulesValidationError as e:
+        return error_response(
+            "VALIDATION_ERROR",
+            e.message,
+            details=e.errors if e.errors else None,
+            status_code=400,
+        )
+    
+    effective_rules = game_service.get_game_effective_rules(game)
+    
+    return jsonify(GameRulesPresenter.effective_rules(game, effective_rules)), 200
