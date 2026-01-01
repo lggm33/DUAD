@@ -16,6 +16,8 @@ if TYPE_CHECKING:
     from app.domain.users.models import User
     from app.domain.games.ruleset_models import RulesetTemplate
     from app.domain.characters.models import Character
+    from app.domain.npcs.models import NPC
+    from app.domain.encounters.models import Encounter
 
 
 class GameStatus(str, Enum):
@@ -82,6 +84,12 @@ class Game(Base, IntPrimaryKeyMixin, TimestampMixin):
     )
     characters: Mapped[list["Character"]] = relationship(
         "Character", back_populates="game", cascade="all, delete-orphan"
+    )
+    npcs: Mapped[list["NPC"]] = relationship(
+        "NPC", back_populates="game", cascade="all, delete-orphan"
+    )
+    encounters: Mapped[list["Encounter"]] = relationship(
+        "Encounter", back_populates="game", cascade="all, delete-orphan"
     )
 
     def requires_character_approval(self) -> bool:

@@ -80,6 +80,8 @@ import app.domain.games.models
 import app.domain.games.ruleset_models  
 import app.domain.chat.models  
 import app.domain.characters.models  
+import app.domain.npcs.models  
+import app.domain.encounters.models  
 
 target_metadata = Base.metadata
 
