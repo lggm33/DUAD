@@ -1,254 +1,66 @@
 """
-Flask-SocketIO event handlers for real-time communication.
+Flask-SocketIO event handlers orchestrator.
 
-This module handles WebSocket connections, authentication, and chat messages
-using Flask-SocketIO's built-in room management.
+This module registers all SocketIO event handlers by delegating to
+domain-specific modules for better code organization.
 """
 
 import logging
 from flask import request
-from flask_socketio import emit, join_room, leave_room, disconnect
+from flask_socketio import emit
 
-from app.config import get_settings
 from app.extensions import db
-from app.utils.jwt_service import JwtService
-from app.domain.users.user_repository import UserRepository
 from app.domain.chat.chat_repository import ChatRepository
 from app.domain.chat.chat_service import ChatService
-from app.domain.games.game_membership_repository import GameMembershipRepository
-from app.domain.games.models import GameMembershipStatus
+
+from app.realtime.connection_events import register_connection_events
+from app.realtime.game_room_events import register_game_room_events
+from app.realtime.chat_events import register_chat_events
+from app.realtime.combat_events import register_combat_events
 
 logger = logging.getLogger(__name__)
 
-# Store authenticated users by session id
-# {sid: {"user_id": int, "username": str, "game_id": int | None}}
+# Shared state for authenticated users by session id
 authenticated_users: dict[str, dict] = {}
 
 
 def register_socketio_events(socketio, app):
     """Register all SocketIO event handlers."""
 
+    # Shared state that all modules need access to
+    shared_state = {
+        "authenticated_users": authenticated_users,
+    }
+
     def broadcast_system_message(game_id: int, content: str):
-        """
-        Create and broadcast a system message to a game room.
-        Must be called within app_context.
-        """
+        """Create and broadcast a system message to a game room."""
         session = db.get_session()
         chat_repo = ChatRepository(session)
         chat_service = ChatService(chat_repo)
         message = chat_service.send_system_message(game_id, content)
         message_data = chat_service.message_to_dict(message)
         session.commit()
-
         emit("chat_message", message_data, room=f"game_{game_id}")
         return message_data
 
-    @socketio.on("connect")
-    def handle_connect(auth):
-        """Handle new WebSocket connection with JWT authentication."""
-        logger.info(f"[SocketIO] New connection attempt: {request.sid}")
-        logger.info(f"[SocketIO] Auth: {auth}")
-
-        if not auth or "token" not in auth:
-            logger.warning(f"[SocketIO] Connection rejected: no token provided")
-            return False  # Reject connection
-
-        token = auth["token"]
-
-        try:
-            with app.app_context():
-                settings = get_settings()
-                jwt_service = JwtService(secret_key=settings.jwt_secret_key)
-                payload = jwt_service.verify(token)
-                user_id = int(payload["sub"])
-
-                session = db.get_session()
-                user_repo = UserRepository(session)
-                user = user_repo.get_by_id(user_id)
-
-                if not user:
-                    logger.warning(f"[SocketIO] Connection rejected: user {user_id} not found")
-                    return False
-
-                # Store user info
-                authenticated_users[request.sid] = {
-                    "user_id": user.id,
-                    "username": user.username,
-                    "name": user.name,
-                    "game_id": None
-                }
-
-                logger.info(f"[SocketIO] User {user.username} (id={user.id}) connected")
-                emit("auth_ok", {"user_id": user.id, "username": user.username, "name": user.name})
-
-        except Exception as e:
-            logger.error(f"[SocketIO] Auth failed: {e}")
-            return False  # Reject connection
-
-    @socketio.on("disconnect")
-    def handle_disconnect():
-        """Handle WebSocket disconnection."""
-        user = authenticated_users.pop(request.sid, None)
-        if user:
-            logger.info(f"[SocketIO] User {user['username']} disconnected")
-            if user.get("game_id"):
-                game_id = user["game_id"]
-                try:
-                    with app.app_context():
-                        # Create system message for disconnection
-                        display_name = user.get("name") or user.get("username")
-                        broadcast_system_message(game_id, f"{display_name} left the chat")
-                        logger.info(f"[SocketIO] System message: {display_name} left game {game_id}")
-                except Exception as e:
-                    logger.error(f"[SocketIO] Error creating disconnect system message: {e}")
-
-    @socketio.on("join_game")
-    def handle_join_game(data):
-        """Join a game room for real-time updates."""
+    def get_user_or_error():
+        """Get authenticated user or emit error."""
         user = authenticated_users.get(request.sid)
         if not user:
             emit("error", {"code": "NOT_AUTHENTICATED", "message": "Not authenticated"})
-            return
+            return None
+        return user
 
-        game_id = data.get("game_id")
-        if not game_id:
-            emit("error", {"code": "INVALID_DATA", "message": "game_id is required"})
-            return
+    # Helper functions shared across modules
+    helpers = {
+        "broadcast_system_message": broadcast_system_message,
+        "get_user_or_error": get_user_or_error,
+    }
 
-        try:
-            with app.app_context():
-                session = db.get_session()
-                membership_repo = GameMembershipRepository(session)
-                membership = membership_repo.get_game_membership_by_game_id_and_user_id(
-                    game_id, user["user_id"]
-                )
+    # Register all event handlers from domain-specific modules
+    register_connection_events(socketio, app, shared_state, helpers)
+    register_game_room_events(socketio, app, shared_state, helpers)
+    register_chat_events(socketio, app, shared_state, helpers)
+    register_combat_events(socketio, app, shared_state, helpers)
 
-                if not membership or membership.status != GameMembershipStatus.ACTIVE:
-                    emit("error", {"code": "NOT_MEMBER", "message": "Not a member of this game"})
-                    return
-
-                # Leave previous game room if any
-                if user.get("game_id"):
-                    leave_room(f"game_{user['game_id']}")
-
-                # Join new game room
-                room_name = f"game_{game_id}"
-                join_room(room_name)
-                user["game_id"] = game_id
-
-                logger.info(f"[SocketIO] User {user['username']} joined game {game_id}")
-
-                # Emit joined_game first so client knows it joined
-                emit("joined_game", {"game_id": game_id})
-
-                # Create and broadcast system message for user joining
-                display_name = user.get("name") or user.get("username")
-                broadcast_system_message(game_id, f"{display_name} joined the chat")
-
-        except Exception as e:
-            logger.error(f"[SocketIO] Error joining game: {e}")
-            emit("error", {"code": "JOIN_FAILED", "message": "Failed to join game"})
-
-    @socketio.on("leave_chat")
-    def handle_leave_chat(data):
-        """
-        Leave the chat room (user navigates away from game view).
-        User is still a member of the game, just not viewing the chat.
-        """
-        user = authenticated_users.get(request.sid)
-        if not user:
-            return
-
-        game_id = data.get("game_id") or user.get("game_id")
-        if not game_id:
-            return
-
-        try:
-            with app.app_context():
-                # Create system message before leaving room
-                display_name = user.get("name") or user.get("username")
-                broadcast_system_message(game_id, f"{display_name} left the chat")
-
-                room_name = f"game_{game_id}"
-                leave_room(room_name)
-                user["game_id"] = None
-                logger.info(f"[SocketIO] User {user['username']} left chat in game {game_id}")
-
-        except Exception as e:
-            logger.error(f"[SocketIO] Error in leave_chat: {e}")
-            # Still leave the room even if system message fails
-            room_name = f"game_{game_id}"
-            leave_room(room_name)
-            user["game_id"] = None
-
-    @socketio.on("leave_game")
-    def handle_leave_game(data):
-        """
-        Leave the game entirely (user abandons the game).
-        This is called when the user leaves the game membership.
-        """
-        user = authenticated_users.get(request.sid)
-        if not user:
-            return
-
-        game_id = data.get("game_id") or user.get("game_id")
-        if not game_id:
-            return
-
-        try:
-            with app.app_context():
-                # Create system message for leaving the game
-                display_name = user.get("name") or user.get("username")
-                broadcast_system_message(game_id, f"{display_name} left the game")
-
-                room_name = f"game_{game_id}"
-                leave_room(room_name)
-                user["game_id"] = None
-                logger.info(f"[SocketIO] User {user['username']} left game {game_id}")
-
-        except Exception as e:
-            logger.error(f"[SocketIO] Error in leave_game: {e}")
-            # Still leave the room even if system message fails
-            room_name = f"game_{game_id}"
-            leave_room(room_name)
-            user["game_id"] = None
-
-    @socketio.on("chat_message")
-    def handle_chat_message(data):
-        """Handle incoming chat message."""
-        user = authenticated_users.get(request.sid)
-        if not user:
-            emit("error", {"code": "NOT_AUTHENTICATED", "message": "Not authenticated"})
-            return
-
-        game_id = data.get("game_id")
-        content = data.get("content", "").strip()
-
-        if not game_id or not content:
-            emit("error", {"code": "INVALID_DATA", "message": "game_id and content are required"})
-            return
-
-        if user.get("game_id") != game_id:
-            emit("error", {"code": "NOT_IN_GAME", "message": "You are not in this game"})
-            return
-
-        try:
-            with app.app_context():
-                session = db.get_session()
-                chat_repo = ChatRepository(session)
-                chat_service = ChatService(chat_repo)
-                message = chat_service.send_message(game_id, user["user_id"], content)
-                message_data = chat_service.message_to_dict(message)
-
-                session.commit()
-
-                # Broadcast to all users in the game room
-                emit("chat_message", message_data, room=f"game_{game_id}")
-                logger.info(f"[SocketIO] Chat from {user['username']} in game {game_id}")
-
-        except ValueError as e:
-            emit("error", {"code": "VALIDATION_ERROR", "message": str(e)})
-        except Exception as e:
-            logger.error(f"[SocketIO] Error sending chat: {e}")
-            emit("error", {"code": "CHAT_FAILED", "message": "Failed to send message"})
-
+    logger.info("[SocketIO] All event handlers registered")
