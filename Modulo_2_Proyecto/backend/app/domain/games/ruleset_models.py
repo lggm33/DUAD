@@ -10,20 +10,12 @@ from __future__ import annotations
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
-from pydantic import BaseModel
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
 from sqlalchemy.types import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.domain.common.models import Base, IntPrimaryKeyMixin, TimestampMixin
-from app.domain.games.schemas.validators import (
-    get_default_rules,
-    get_effective_rules,
-    merge_rules,
-    RulesValidationError,
-    validate_base_rules,
-)
 
 
 if TYPE_CHECKING:
@@ -60,7 +52,7 @@ class RulesetTemplate(Base, IntPrimaryKeyMixin, TimestampMixin):
     base_rules: Mapped[dict[str, Any]] = mapped_column(
         JSON,
         nullable=False,
-        default=get_default_rules,
+        default=dict,
     )
     is_system_provided: Mapped[bool] = mapped_column(
         Boolean,
@@ -83,62 +75,4 @@ class RulesetTemplate(Base, IntPrimaryKeyMixin, TimestampMixin):
         "Game",
         back_populates="ruleset_template",
     )
-
-    def set_base_rules(self, rules: dict[str, Any]) -> None:
-        """
-        Validate and set base_rules.
-
-        Args:
-            rules: Dictionary containing base rules
-
-        Raises:
-            RulesValidationError: If validation fails
-        """
-        validated = validate_base_rules(rules)
-        self.base_rules = validated.model_dump()
-
-    def get_base_rules_typed(self) -> BaseModel:
-        """
-        Get base_rules as a validated Pydantic model.
-
-        Returns:
-            Validated Pydantic model (BaseRulesV1 or future versions)
-
-        Raises:
-            RulesValidationError: If stored rules are invalid
-        """
-        return validate_base_rules(self.base_rules)
-
-    def get_effective_rules_dict(
-        self,
-        custom_overrides: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        """
-        Merge base rules with custom overrides and return as dict.
-
-        Args:
-            custom_overrides: Optional custom rules to merge
-
-        Returns:
-            Merged rules as dictionary
-        """
-        return merge_rules(self.base_rules, custom_overrides)
-
-    def get_effective_rules_typed(
-        self,
-        custom_overrides: dict[str, Any] | None = None,
-    ) -> BaseModel:
-        """
-        Merge base rules with custom overrides and return as typed model.
-
-        Args:
-            custom_overrides: Optional custom rules to merge
-
-        Returns:
-            Validated Pydantic model with merged rules
-
-        Raises:
-            RulesValidationError: If merged rules are invalid
-        """
-        return get_effective_rules(self.base_rules, custom_overrides)
 

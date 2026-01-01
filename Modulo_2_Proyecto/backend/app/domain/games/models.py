@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint, func, text
+from sqlalchemy.types import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.domain.common.models import Base, IntPrimaryKeyMixin, TimestampMixin
@@ -13,6 +14,7 @@ from app.domain.common.models import Base, IntPrimaryKeyMixin, TimestampMixin
 
 if TYPE_CHECKING:
     from app.domain.users.models import User
+    from app.domain.games.ruleset_models import RulesetTemplate
 
 
 class GameStatus(str, Enum):
@@ -20,7 +22,21 @@ class GameStatus(str, Enum):
     ENDED = "ENDED"
 
 
+class CharacterCreationMode(str, Enum):
+    """How character creation is handled in this game."""
+
+    OPEN = "OPEN"  # Auto-approved if validation passes
+    DM_APPROVAL = "DM_APPROVAL"  # Requires DM approval
+
+
 class Game(Base, IntPrimaryKeyMixin, TimestampMixin):
+    """
+    Represents a game session.
+
+    Games can optionally reference a RulesetTemplate for base rules,
+    and can have custom_rules that override the template.
+    """
+
     __tablename__ = "games"
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -33,14 +49,40 @@ class Game(Base, IntPrimaryKeyMixin, TimestampMixin):
         server_default=text("'ACTIVE'"),
     )
 
+    # Ruleset configuration
+    ruleset_template_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("ruleset_templates.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    custom_rules: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON,
+        nullable=True,
+        default=None,
+    )
+    character_creation_mode: Mapped[CharacterCreationMode] = mapped_column(
+        SQLEnum(CharacterCreationMode, name="character_creation_mode"),
+        nullable=False,
+        server_default=text("'OPEN'"),
+    )
+
     # Relationships
-    dm_user: Mapped["User"] = relationship("User", back_populates="games")  # type: ignore
+    dm_user: Mapped["User"] = relationship("User", back_populates="games")
+    ruleset_template: Mapped["RulesetTemplate | None"] = relationship(
+        "RulesetTemplate",
+        back_populates="games",
+    )
     memberships: Mapped[list["GameMembership"]] = relationship(
         "GameMembership", back_populates="game", cascade="all, delete-orphan"
     )
     invites: Mapped[list["GameInvite"]] = relationship(
         "GameInvite", back_populates="game", cascade="all, delete-orphan"
     )
+
+    def requires_character_approval(self) -> bool:
+        """Check if character creation requires DM approval."""
+        return self.character_creation_mode == CharacterCreationMode.DM_APPROVAL
 
 
 class GameRoleInGame(str, Enum):

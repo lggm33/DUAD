@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Optional, TypedDict
 
+from pydantic import BaseModel
+
 from app.domain.games.models import (
     Game,
     GameInvite,
@@ -10,6 +12,13 @@ from app.domain.games.models import (
     GameMembership,
     GameMembershipStatus,
     GameStatus,
+)
+from app.domain.games.schemas.validators import (
+    get_effective_rules,
+    merge_rules,
+    validate_base_rules,
+    validate_custom_rules,
+    RulesValidationError,
 )
 
 from app.domain.games.game_repository import GameRepository
@@ -307,3 +316,63 @@ class GameService:
             )
             for m in memberships
         ]
+
+    # =========================================================================
+    # Rules Management
+    # =========================================================================
+
+    def set_game_custom_rules(self, game: Game, rules: dict[str, Any] | None) -> None:
+        """
+        Validate and set custom_rules for a game.
+
+        Args:
+            game: The game to update
+            rules: Custom rules to override template (can be None to clear)
+
+        Raises:
+            RulesValidationError: If validation fails
+        """
+        validated = validate_custom_rules(rules)
+        game.custom_rules = validated if validated else None
+
+    def get_game_effective_rules(self, game: Game) -> dict[str, Any]:
+        """
+        Get effective rules by merging template with custom rules.
+
+        Args:
+            game: The game to get rules for
+
+        Returns:
+            Merged rules as dictionary. If no template, returns custom_rules or empty dict.
+        """
+        if game.ruleset_template is None:
+            return game.custom_rules or {}
+
+        return merge_rules(
+            game.ruleset_template.base_rules,
+            game.custom_rules,
+        )
+
+    def get_game_effective_rules_typed(self, game: Game) -> BaseModel:
+        """
+        Get effective rules as validated Pydantic model.
+
+        Args:
+            game: The game to get rules for
+
+        Returns:
+            Validated Pydantic model with merged rules.
+
+        Raises:
+            RulesValidationError: If no rules configured or validation fails.
+        """
+        if game.ruleset_template is None:
+            if not game.custom_rules:
+                raise RulesValidationError("No rules configured for this game")
+            # If only custom_rules, they must be complete
+            return validate_base_rules(game.custom_rules)
+
+        return get_effective_rules(
+            game.ruleset_template.base_rules,
+            game.custom_rules,
+        )
