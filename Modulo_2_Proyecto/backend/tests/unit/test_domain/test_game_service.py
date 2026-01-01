@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from datetime import datetime, timezone
-from app.domain.games.game_servise import GameService
+from app.domain.games.game_service import GameService
 from app.domain.games.models import (
     Game,
     GameInvite,

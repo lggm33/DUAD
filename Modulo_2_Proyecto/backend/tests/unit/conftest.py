@@ -13,6 +13,10 @@ import pytest
 from app.domain.users.models import User  # noqa: F401
 from app.domain.auth.models import AuthRefreshToken  # noqa: F401
 from app.domain.games.models import Game, GameMembership, GameInvite  # noqa: F401
+from app.domain.games.ruleset_models import RulesetTemplate  # noqa: F401
+from app.domain.characters.models import Character  # noqa: F401
+from app.domain.npcs.models import NPC  # noqa: F401
+from app.domain.encounters.models import Encounter, EncounterParticipant, EncounterState, CombatLog  # noqa: F401
 
 
 # Add unit test specific fixtures here

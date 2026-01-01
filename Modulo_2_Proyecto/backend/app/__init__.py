@@ -15,6 +15,7 @@ def create_app() -> Flask:
     from app.api.user_routes import user_bp
     from app.api.game_routes import game_bp
     from app.api.ruleset_routes import ruleset_bp
+    from app.api.character_routes import character_bp
     from app.realtime.socketio_events import register_socketio_events
 
     settings = get_settings()
@@ -45,6 +46,7 @@ def create_app() -> Flask:
     app.register_blueprint(user_bp)
     app.register_blueprint(game_bp)
     app.register_blueprint(ruleset_bp)
+    app.register_blueprint(character_bp)
     _register_error_handlers(app)
 
     return app
