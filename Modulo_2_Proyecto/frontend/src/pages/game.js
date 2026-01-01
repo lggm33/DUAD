@@ -297,6 +297,7 @@ function cleanupGamePage() {
 
 function disconnectChat() {
   if (gameChat) {
+    gameChat.leaveChat()
     gameChat.disconnect()
     gameChat = null
   }

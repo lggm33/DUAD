@@ -28,6 +28,21 @@ authenticated_users: dict[str, dict] = {}
 def register_socketio_events(socketio, app):
     """Register all SocketIO event handlers."""
 
+    def broadcast_system_message(game_id: int, content: str):
+        """
+        Create and broadcast a system message to a game room.
+        Must be called within app_context.
+        """
+        session = db.get_session()
+        chat_repo = ChatRepository(session)
+        chat_service = ChatService(chat_repo)
+        message = chat_service.send_system_message(game_id, content)
+        message_data = chat_service.message_to_dict(message)
+        session.commit()
+
+        emit("chat_message", message_data, room=f"game_{game_id}")
+        return message_data
+
     @socketio.on("connect")
     def handle_connect(auth):
         """Handle new WebSocket connection with JWT authentication."""
@@ -77,12 +92,15 @@ def register_socketio_events(socketio, app):
         if user:
             logger.info(f"[SocketIO] User {user['username']} disconnected")
             if user.get("game_id"):
-                # Notify others in the game room
-                emit(
-                    "user_left",
-                    {"user_id": user["user_id"], "username": user["username"], "name": user["name"]},
-                    room=f"game_{user['game_id']}",
-                )
+                game_id = user["game_id"]
+                try:
+                    with app.app_context():
+                        # Create system message for disconnection
+                        display_name = user.get("name") or user.get("username")
+                        broadcast_system_message(game_id, f"{display_name} left the chat")
+                        logger.info(f"[SocketIO] System message: {display_name} left game {game_id}")
+                except Exception as e:
+                    logger.error(f"[SocketIO] Error creating disconnect system message: {e}")
 
     @socketio.on("join_game")
     def handle_join_game(data):
@@ -120,23 +138,23 @@ def register_socketio_events(socketio, app):
 
                 logger.info(f"[SocketIO] User {user['username']} joined game {game_id}")
 
-                # Notify others in the room
-                emit(
-                    "user_joined",
-                    {"user_id": user["user_id"], "username": user["username"], "name": user["name"]},
-                    room=room_name,
-                    include_self=False,
-                )
-
+                # Emit joined_game first so client knows it joined
                 emit("joined_game", {"game_id": game_id})
+
+                # Create and broadcast system message for user joining
+                display_name = user.get("name") or user.get("username")
+                broadcast_system_message(game_id, f"{display_name} joined the chat")
 
         except Exception as e:
             logger.error(f"[SocketIO] Error joining game: {e}")
             emit("error", {"code": "JOIN_FAILED", "message": "Failed to join game"})
 
-    @socketio.on("leave_game")
-    def handle_leave_game(data):
-        """Leave the current game room."""
+    @socketio.on("leave_chat")
+    def handle_leave_chat(data):
+        """
+        Leave the chat room (user navigates away from game view).
+        User is still a member of the game, just not viewing the chat.
+        """
         user = authenticated_users.get(request.sid)
         if not user:
             return
@@ -145,18 +163,55 @@ def register_socketio_events(socketio, app):
         if not game_id:
             return
 
-        room_name = f"game_{game_id}"
-        leave_room(room_name)
+        try:
+            with app.app_context():
+                # Create system message before leaving room
+                display_name = user.get("name") or user.get("username")
+                broadcast_system_message(game_id, f"{display_name} left the chat")
 
-        # Notify others
-        emit(
-            "user_left",
-            {"user_id": user["user_id"], "username": user["username"], "name": user["name"]},
-            room=room_name,
-        )
+                room_name = f"game_{game_id}"
+                leave_room(room_name)
+                user["game_id"] = None
+                logger.info(f"[SocketIO] User {user['username']} left chat in game {game_id}")
 
-        user["game_id"] = None
-        logger.info(f"[SocketIO] User {user['username']} left game {game_id}")
+        except Exception as e:
+            logger.error(f"[SocketIO] Error in leave_chat: {e}")
+            # Still leave the room even if system message fails
+            room_name = f"game_{game_id}"
+            leave_room(room_name)
+            user["game_id"] = None
+
+    @socketio.on("leave_game")
+    def handle_leave_game(data):
+        """
+        Leave the game entirely (user abandons the game).
+        This is called when the user leaves the game membership.
+        """
+        user = authenticated_users.get(request.sid)
+        if not user:
+            return
+
+        game_id = data.get("game_id") or user.get("game_id")
+        if not game_id:
+            return
+
+        try:
+            with app.app_context():
+                # Create system message for leaving the game
+                display_name = user.get("name") or user.get("username")
+                broadcast_system_message(game_id, f"{display_name} left the game")
+
+                room_name = f"game_{game_id}"
+                leave_room(room_name)
+                user["game_id"] = None
+                logger.info(f"[SocketIO] User {user['username']} left game {game_id}")
+
+        except Exception as e:
+            logger.error(f"[SocketIO] Error in leave_game: {e}")
+            # Still leave the room even if system message fails
+            room_name = f"game_{game_id}"
+            leave_room(room_name)
+            user["game_id"] = None
 
     @socketio.on("chat_message")
     def handle_chat_message(data):

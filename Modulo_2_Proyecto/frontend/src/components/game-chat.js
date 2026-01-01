@@ -53,8 +53,6 @@ export class GameChat {
   registerEventHandlers() {
     this.socketClient.on('joined_game', this.handleJoinedGame.bind(this))
     this.socketClient.on('chat_message', this.handleChatMessage.bind(this))
-    this.socketClient.on('user_joined', this.handleUserJoined.bind(this))
-    this.socketClient.on('user_left', this.handleUserLeft.bind(this))
     this.socketClient.on('error', this.handleSocketError.bind(this))
   }
 
@@ -116,7 +114,7 @@ export class GameChat {
   }
 
   handleJoinedGame(data) {
-    this.addSystemMessage('You joined the adventure')
+    // System message for joining is now sent from the server
   }
 
   handleChatMessage(message) {
@@ -127,23 +125,21 @@ export class GameChat {
     this.scrollToBottom()
   }
 
-  handleUserJoined(data) {
-    this.addSystemMessage(`${data.username || data.name} joined the adventure`)
-  }
-
-  handleUserLeft(data) {
-    this.addSystemMessage(`${data.username || data.name} left the adventure`)
-  }
-
   handleSocketError(data) {
     console.error('[GameChat] Server error:', data.code, data.message)
     this.onError(`Chat error: ${data.message}`)
   }
 
   renderMessage(message) {
-
     const chatMessagesEl = document.getElementById('chat-messages')
-    const isOwn = message.user_id.toString() === this.currentUser?.sub.toString()
+
+    // Handle system messages differently
+    if (message.message_type === 'system') {
+      this.addSystemMessage(message.content)
+      return
+    }
+
+    const isOwn = message.user_id?.toString() === this.currentUser?.sub?.toString()
     
     const messageEl = document.createElement('div')
     messageEl.className = `chat-message ${isOwn ? 'is-own' : ''}`
@@ -215,7 +211,18 @@ export class GameChat {
   }
 
   /**
-   * Disconnects the chat and cleans up resources
+   * Leave the chat room (notifies server before disconnecting).
+   * Use this when the user navigates away from the game view.
+   */
+  leaveChat() {
+    if (this.socketClient && this.socketClient.isConnected) {
+      this.socketClient.leaveChat(parseInt(this.gameId))
+    }
+  }
+
+  /**
+   * Disconnects the chat and cleans up resources.
+   * Should call leaveChat() first if you want to notify the server.
    */
   disconnect() {
     if (this.socketClient) {

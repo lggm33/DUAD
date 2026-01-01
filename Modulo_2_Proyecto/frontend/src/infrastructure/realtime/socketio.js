@@ -72,7 +72,7 @@ export class SocketIOClient {
   }
 
   /**
-   * Leave the current game room.
+   * Leave the current game room (user abandons the game).
    */
   leaveGame(gameId) {
     if (!this.socket?.connected) {
@@ -80,6 +80,19 @@ export class SocketIOClient {
     }
 
     this.socket.emit('leave_game', { game_id: gameId || this.currentGameId })
+    this.currentGameId = null
+  }
+
+  /**
+   * Leave the chat room (user navigates away from game view).
+   * User remains a member of the game, just not viewing the chat.
+   */
+  leaveChat(gameId) {
+    if (!this.socket?.connected) {
+      return
+    }
+
+    this.socket.emit('leave_chat', { game_id: gameId || this.currentGameId })
     this.currentGameId = null
   }
 
