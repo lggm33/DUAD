@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from app.domain.auth.models import AuthRefreshToken
     from app.domain.games.models import Game
     from app.domain.games.models import GameInvite, GameMembership
+    from app.domain.games.ruleset_models import RulesetTemplate
 
 
 class UserRole(str, Enum):
@@ -43,4 +44,7 @@ class User(Base, IntPrimaryKeyMixin, TimestampMixin):
     )
     created_game_invites: Mapped[list["GameInvite"]] = relationship(
         "GameInvite", back_populates="created_by_user", cascade="all, delete-orphan"
+    )
+    created_ruleset_templates: Mapped[list["RulesetTemplate"]] = relationship(
+        "RulesetTemplate", back_populates="created_by_user"
     )
