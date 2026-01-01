@@ -7,6 +7,7 @@
 @import './components/navbar.css';
 @import './components/footer.css';
 @import './components/game-chat.css';
+@import './components/character-creator.css';
 
 /* Pages */
 @import './pages/home.css';

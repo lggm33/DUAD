@@ -1,5 +1,5 @@
 import template from './game.html?raw'
-import { Footer, showConfirmModal, GameChat } from '../components/index.js'
+import { Footer, showConfirmModal, GameChat, CharacterCreator } from '../components/index.js'
 import { navigate, getRouteParams, onBeforeRouteChange } from '../router.js'
 import { getUserFromToken } from '../infrastructure/auth/auth.js'
 import { fetchWithAuth, escapeHtml, getInitials } from '../utils/index.js'
@@ -9,6 +9,8 @@ let currentUserRole = null
 let gameChat = null
 let currentUser = null
 let unsubscribeRouteChange = null
+let characterCreator = null
+let currentCharacter = null
 
 export function gamePage(app) {
   app.innerHTML = template + Footer()
@@ -49,6 +51,7 @@ async function loadGame(gameId) {
     renderGameInfo(game)
     setupGameActions(game)
     await loadPlayers(gameId)
+    await loadUserCharacter(gameId)
     
     initChatComponent(gameId)
 
@@ -287,6 +290,11 @@ function setupGameActions(game) {
 function cleanupGamePage() {
   disconnectChat()
   
+  if (characterCreator) {
+    characterCreator.destroy()
+    characterCreator = null
+  }
+  
   if (unsubscribeRouteChange) {
     unsubscribeRouteChange()
     unsubscribeRouteChange = null
@@ -301,6 +309,246 @@ function disconnectChat() {
     gameChat.disconnect()
     gameChat = null
   }
+}
+
+// ========================================
+// Character Functions
+// ========================================
+
+async function loadUserCharacter(gameId) {
+  // Only load character for players, not DMs
+  if (currentUserRole === 'DM') {
+    return
+  }
+
+  try {
+    const response = await fetchWithAuth(`/api/v1/game/${gameId}/character`)
+    
+    if (response.ok) {
+      const character = await response.json()
+      currentCharacter = character
+      renderCharacterSection(character)
+    } else if (response.status === 404) {
+      // No character exists, show create prompt
+      currentCharacter = null
+      renderNoCharacterSection()
+    }
+  } catch (error) {
+    console.error('Failed to load character:', error)
+    renderNoCharacterSection()
+  }
+}
+
+function renderCharacterSection(character) {
+  const contentEl = document.getElementById('game-content')
+  if (!contentEl) return
+
+  // Remove existing character section if any
+  const existingSection = document.getElementById('character-section')
+  if (existingSection) {
+    existingSection.remove()
+  }
+
+  const statusClass = getCharacterStatusClass(character.status)
+  const statusText = formatCharacterStatus(character.status)
+  const charData = character.data || {}
+  
+  const sectionHtml = `
+    <section id="character-section" class="game-section character-section">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          Your Character
+        </h2>
+        <span class="character-status-badge ${statusClass}">${statusText}</span>
+      </div>
+      
+      <div class="character-card">
+        <div class="character-avatar">
+          <span>${getInitials(character.name)}</span>
+        </div>
+        <div class="character-info">
+          <h3 class="character-name">${escapeHtml(character.name)}</h3>
+          <p class="character-details">
+            ${escapeHtml(charData.race || '???')} ${escapeHtml(charData.class || '???')} • Level ${charData.level || 1}
+          </p>
+          ${character.dm_feedback ? `
+            <div class="character-feedback">
+              <strong>DM Feedback:</strong> ${escapeHtml(character.dm_feedback)}
+            </div>
+          ` : ''}
+        </div>
+        <div class="character-stats">
+          <div class="character-stat">
+            <span class="character-stat-value">${charData.hp || 10}</span>
+            <span class="character-stat-label">HP</span>
+          </div>
+          <div class="character-stat">
+            <span class="character-stat-value">${charData.ac || 10}</span>
+            <span class="character-stat-label">AC</span>
+          </div>
+        </div>
+        ${character.status === 'DRAFT' || character.status === 'REJECTED' ? `
+          <button id="edit-character-btn" class="btn btn-ghost">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            Edit
+          </button>
+        ` : ''}
+      </div>
+    </section>
+  `
+
+  // Insert after DM section or at the beginning
+  const dmSection = document.getElementById('dm-section')
+  if (dmSection && !dmSection.hidden) {
+    dmSection.insertAdjacentHTML('afterend', sectionHtml)
+  } else {
+    const chatSection = contentEl.querySelector('.chat-section')
+    if (chatSection) {
+      chatSection.insertAdjacentHTML('beforebegin', sectionHtml)
+    }
+  }
+
+  // Setup edit button if exists
+  const editBtn = document.getElementById('edit-character-btn')
+  if (editBtn) {
+    editBtn.addEventListener('click', () => openCharacterCreator())
+  }
+}
+
+function renderNoCharacterSection() {
+  const contentEl = document.getElementById('game-content')
+  if (!contentEl) return
+
+  // Remove existing character section if any
+  const existingSection = document.getElementById('character-section')
+  if (existingSection) {
+    existingSection.remove()
+  }
+
+  const sectionHtml = `
+    <section id="character-section" class="game-section character-section character-section-empty">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          Your Character
+        </h2>
+      </div>
+      
+      <div class="no-character-card">
+        <div class="no-character-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="8.5" cy="7" r="4"></circle>
+            <line x1="20" y1="8" x2="20" y2="14"></line>
+            <line x1="23" y1="11" x2="17" y2="11"></line>
+          </svg>
+        </div>
+        <h3>Create Your Character</h3>
+        <p>You haven't created a character for this game yet. Create one to join the adventure!</p>
+        <button id="create-character-btn" class="btn btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Create Character
+        </button>
+      </div>
+    </section>
+  `
+
+  // Insert at the beginning of content
+  const dmSection = document.getElementById('dm-section')
+  if (dmSection && !dmSection.hidden) {
+    dmSection.insertAdjacentHTML('afterend', sectionHtml)
+  } else {
+    const chatSection = contentEl.querySelector('.chat-section')
+    if (chatSection) {
+      chatSection.insertAdjacentHTML('beforebegin', sectionHtml)
+    }
+  }
+
+  // Setup create button
+  const createBtn = document.getElementById('create-character-btn')
+  if (createBtn) {
+    createBtn.addEventListener('click', () => openCharacterCreator())
+  }
+}
+
+function openCharacterCreator() {
+  if (characterCreator) {
+    characterCreator.destroy()
+  }
+
+  const rules = currentGame?.custom_rules || currentGame?.ruleset_template?.base_rules || {}
+
+  characterCreator = new CharacterCreator({
+    gameId: currentGame.id,
+    rules: rules,
+    onSubmit: (character) => {
+      showMessage('Character submitted for approval!', 'success')
+      currentCharacter = character
+      renderCharacterSection(character)
+    },
+    onSaveDraft: (character) => {
+      showMessage('Character saved as draft', 'success')
+      currentCharacter = character
+      renderCharacterSection(character)
+    },
+    onCancel: () => {
+      // Nothing special needed
+    }
+  })
+
+  // If editing existing character, pre-populate the data
+  if (currentCharacter) {
+    characterCreator.characterData = {
+      name: currentCharacter.name || '',
+      race: currentCharacter.data?.race || '',
+      class: currentCharacter.data?.class || '',
+      level: currentCharacter.data?.level || 1,
+      background: currentCharacter.data?.background || '',
+      stats: currentCharacter.data?.abilities || {
+        STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10
+      },
+      skills: currentCharacter.data?.skills || [],
+      description: currentCharacter.data?.description || ''
+    }
+    characterCreator.recalculatePoints()
+  }
+
+  characterCreator.init()
+}
+
+function getCharacterStatusClass(status) {
+  const classes = {
+    'DRAFT': 'status-draft',
+    'PENDING_APPROVAL': 'status-pending',
+    'APPROVED': 'status-approved',
+    'REJECTED': 'status-rejected',
+    'CONVERTED_TO_NPC': 'status-converted'
+  }
+  return classes[status] || 'status-draft'
+}
+
+function formatCharacterStatus(status) {
+  const labels = {
+    'DRAFT': 'Draft',
+    'PENDING_APPROVAL': 'Pending Approval',
+    'APPROVED': 'Approved',
+    'REJECTED': 'Rejected',
+    'CONVERTED_TO_NPC': 'Converted to NPC'
+  }
+  return labels[status] || status
 }
 
 // ========================================
