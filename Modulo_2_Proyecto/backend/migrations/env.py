@@ -55,6 +55,29 @@ def _load_dotenv_if_present() -> None:
 _load_dotenv_if_present()
 
 
+def _read_bool(value: str | None, default: bool) -> bool:
+    """Parse a boolean from environment variable."""
+    if value is None:
+        return default
+    normalized = value.strip().lower()
+    return normalized in {"1", "true", "yes", "y", "on"}
+
+
+def _get_database_url() -> str | None:
+    """
+    Get the appropriate database URL based on environment.
+    Uses DATABASE_URL_TEST when TESTING=true.
+    """
+    is_testing = _read_bool(os.getenv("TESTING"), default=False)
+    
+    if is_testing:
+        test_url = os.getenv("DATABASE_URL_TEST")
+        if test_url and test_url.strip():
+            return test_url
+    
+    return os.getenv("DATABASE_URL")
+
+
 def _normalize_database_url(raw_url: str) -> str:
     """
     Normalize DATABASE_URL for SQLAlchemy.
@@ -103,7 +126,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    env_url = os.getenv("DATABASE_URL")
+    env_url = _get_database_url()
     if env_url is not None and env_url.strip() != "":
         config.set_main_option("sqlalchemy.url", _normalize_database_url(env_url))
 
@@ -128,7 +151,7 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    env_url = os.getenv("DATABASE_URL")
+    env_url = _get_database_url()
     if env_url is not None and env_url.strip() != "":
         config.set_main_option("sqlalchemy.url", _normalize_database_url(env_url))
 

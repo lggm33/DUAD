@@ -51,5 +51,13 @@ db-revision message: install
 db-up: install
 	APP_ENV=staging {{VENV_PYTHON}} -m alembic upgrade head
 
+# Run migrations on test database (uses DATABASE_URL_TEST)
+db-up-test: install
+	TESTING=true APP_ENV=staging {{VENV_PYTHON}} -m alembic upgrade head
+
+# Mark all migrations as applied on test database (sync alembic state)
+db-stamp-test: install
+	TESTING=true APP_ENV=staging {{VENV_PYTHON}} -m alembic stamp head
+
 db-down steps="1": install
 	APP_ENV=staging {{VENV_PYTHON}} -m alembic downgrade -{{steps}}

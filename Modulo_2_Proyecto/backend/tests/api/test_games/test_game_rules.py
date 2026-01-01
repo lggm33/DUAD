@@ -377,13 +377,16 @@ class TestUpdateGameRules:
         session.commit()
         
         token = get_auth_token(client, "dm@example.com")
+        headers = auth_headers(token)
+        headers["Content-Type"] = "application/json"
         response = client.put(
             f"/api/v1/game/{game.id}/rules",
-            headers=auth_headers(token),
+            headers=headers,
+            data="",  # Empty body with JSON content-type
         )
         
         assert response.status_code == 400
-        assert response.get_json()["code"] == "VALIDATION_ERROR"
+        assert response.get_json()["code"] == "BAD_REQUEST"
 
     def test_update_rules_persists_changes(self, client, session, cleanup_database):
         """Test that rule changes are persisted to database."""

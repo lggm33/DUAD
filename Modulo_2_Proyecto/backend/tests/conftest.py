@@ -16,6 +16,8 @@ from app.extensions import db as _db
 from app.domain.common.models import Base
 from app.domain.users.models import User
 from app.domain.auth.models import AuthRefreshToken
+from app.domain.games.models import Game
+from app.domain.games.ruleset_models import RulesetTemplate
 import sqlalchemy as sa
 
 
@@ -34,8 +36,13 @@ def app():
 @pytest.fixture(scope="session")
 def db(app):
     """Create database for testing."""
+    # Bypass safety guards for DDL operations
+    os.environ["ALLOW_DESTRUCTIVE_DDL"] = "true"
+    
     with app.app_context():
         engine = _db.get_engine()
+        # Drop and recreate all tables to ensure schema is up to date
+        Base.metadata.drop_all(bind=engine)
         Base.metadata.create_all(bind=engine)
         yield _db
 
@@ -64,20 +71,24 @@ def test_users():
     return []
 
 @pytest.fixture(scope="function", autouse=False)
-def cleanup_database(app, db):
-    """Automatically clean up the database before and after each test."""
-    def _clean():
+def cleanup_database(app, db, session):
+    """Automatically clean up the database before and after each test.
+    
+    Uses the SAME session as the test to avoid deadlocks.
+    All child tables use ON DELETE CASCADE, so deleting parents cleans everything.
+    """
+    def _clean(sess):
         # Bypass safety guards for cleanup
         os.environ["ALLOW_UNSAFE_QUERY"] = "true"
         os.environ["ALLOW_DESTRUCTIVE_DDL"] = "true"
         
-        with app.app_context():
-            session = db.get_session()
-            session.query(AuthRefreshToken).delete()
-            # Explicitly delete users
-            session.query(User).delete()
-            session.commit()
+        # Delete parents - CASCADE handles children automatically
+        sess.query(Game).delete()
+        sess.query(RulesetTemplate).delete()
+        sess.query(AuthRefreshToken).delete()
+        sess.query(User).delete()
+        sess.commit()
     
-    _clean()
+    _clean(session)
     yield
-    _clean()
+    _clean(session)
