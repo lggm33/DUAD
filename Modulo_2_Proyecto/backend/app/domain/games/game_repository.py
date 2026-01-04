@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.domain.games.models import Game
 
@@ -39,8 +39,13 @@ class GameRepository:
     def get_games(self) -> list[Game]:
         """
         Get all games.
+        Eager loads invites to avoid N+1 queries.
         """
-        return self._session.query(Game).all()
+        return (
+            self._session.query(Game)
+            .options(joinedload(Game.invites))
+            .all()
+        )
 
     def get_games_by_ids(self, game_ids: list[int]) -> list[Game]:
         """

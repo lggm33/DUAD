@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Optional
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
-from app.domain.games.models import GameMembership
+from app.domain.games.models import Game, GameMembership
 
 from datetime import datetime
 
@@ -41,8 +41,16 @@ class GameMembershipRepository:
     def get_game_memberships_by_user_id(self, user_id: int) -> list[GameMembership]:
         """
         Get all game memberships by user ID.
+        Eager loads game and invites to avoid N+1 queries.
         """
-        return self._session.query(GameMembership).filter_by(user_id=user_id).all()
+        return (
+            self._session.query(GameMembership)
+            .options(
+                joinedload(GameMembership.game).joinedload(Game.invites)
+            )
+            .filter_by(user_id=user_id)
+            .all()
+        )
 
     def get_game_membership_by_game_id_and_user_id(self, game_id: int, user_id: int) -> Optional[GameMembership]:
         """
