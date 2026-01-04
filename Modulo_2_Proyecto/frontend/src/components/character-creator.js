@@ -767,10 +767,10 @@ export class CharacterCreator {
   /**
    * Build the character data payload for API
    */
-  buildPayload(status = 'PENDING_APPROVAL') {
+  buildPayload(submitForApproval = false) {
     return {
       name: this.characterData.name.trim(),
-      status: status,
+      submit_for_approval: submitForApproval,
       data: {
         race: this.characterData.race,
         class: this.characterData.class,
@@ -789,7 +789,6 @@ export class CharacterCreator {
    * Handle save as draft
    */
   async handleSaveDraft() {
-    // For draft, we allow partial data
     if (!this.characterData.name.trim()) {
       this.errors = ['Please enter a character name to save as draft']
       this.renderForm()
@@ -800,7 +799,7 @@ export class CharacterCreator {
     }
 
     try {
-      const payload = this.buildPayload('DRAFT')
+      const payload = this.buildPayload(false)
       const response = await fetchWithAuth(`/api/v1/game/${this.gameId}/character`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -848,7 +847,7 @@ export class CharacterCreator {
     }
 
     try {
-      const payload = this.buildPayload('PENDING_APPROVAL')
+      const payload = this.buildPayload(true)
       const response = await fetchWithAuth(`/api/v1/game/${this.gameId}/character`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

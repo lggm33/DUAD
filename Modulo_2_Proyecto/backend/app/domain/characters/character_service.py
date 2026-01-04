@@ -60,6 +60,7 @@ class CharacterService:
         user_id: int,
         name: str,
         data: dict[str, Any],
+        submit_for_approval: bool = False,
     ) -> Character:
         """
         Create a new character for a player in a game.
@@ -69,31 +70,42 @@ class CharacterService:
             user_id: The user creating the character
             name: Character name
             data: Character data (class, race, stats, etc.)
+            submit_for_approval: If True, submit for DM approval immediately
 
         Returns:
-            The created character in DRAFT status
+            The created character
 
         Raises:
+            ValueError: If game not found
             ValueError: If user already has a character in this game
             ValueError: If user is not a member of the game
         """
-        # Verify user is an active member of the game
+        game = self._game_repo.get_game_by_id(game_id)
+        if not game:
+            raise ValueError("Game not found")
+
         membership = self._membership_repo.get_game_membership_by_game_id_and_user_id(
             game_id, user_id
         )
         if not membership or membership.status != GameMembershipStatus.ACTIVE:
             raise ValueError("User is not an active member of this game")
 
-        # Check if user already has a character in this game
         existing = self._character_repo.get_by_game_and_user(game_id, user_id)
         if existing:
             raise ValueError("User already has a character in this game")
+
+        status = CharacterStatus.DRAFT
+        if submit_for_approval:
+            if game.requires_character_approval():
+                status = CharacterStatus.PENDING_APPROVAL
+            else:
+                status = CharacterStatus.APPROVED
 
         character = Character(
             game_id=game_id,
             user_id=user_id,
             name=name,
-            status=CharacterStatus.DRAFT,
+            status=status,
             data=data,
         )
 
@@ -146,45 +158,6 @@ class CharacterService:
         if character.status == CharacterStatus.REJECTED:
             character.dm_feedback = None
             character.status = CharacterStatus.DRAFT
-
-        return character
-
-    def submit_for_approval(self, character_id: int, user_id: int) -> Character:
-        """
-        Submit a character for DM approval.
-
-        Args:
-            character_id: The character ID
-            user_id: The user submitting
-
-        Returns:
-            The character with PENDING_APPROVAL status
-
-        Raises:
-            ValueError: If character not found, not owned, or not in DRAFT status
-        """
-        character = self._character_repo.get_by_id(character_id)
-
-        if not character:
-            raise ValueError("Character not found")
-
-        if character.user_id != user_id:
-            raise ValueError("You can only submit your own character")
-
-        if character.status not in (CharacterStatus.DRAFT, CharacterStatus.REJECTED):
-            raise ValueError("Character must be in DRAFT or REJECTED status to submit")
-
-        # Get game to check if approval is required
-        game = self._game_repo.get_game_by_id(character.game_id)
-        if not game:
-            raise ValueError("Game not found")
-
-        if game.requires_character_approval():
-            character.status = CharacterStatus.PENDING_APPROVAL
-            character.dm_feedback = None
-        else:
-            # Auto-approve if game doesn't require DM approval
-            character.status = CharacterStatus.APPROVED
 
         return character
 

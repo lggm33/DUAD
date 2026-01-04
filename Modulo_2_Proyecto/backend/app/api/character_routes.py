@@ -34,8 +34,13 @@ def create_character(game_id: int):
     Request body:
     {
         "name": "Character Name",
-        "data": { ... character data ... }
+        "data": { ... character data ... },
+        "submit_for_approval": true/false (optional, default false)
     }
+
+    If submit_for_approval is true and the game requires approval,
+    the character will be created with PENDING_APPROVAL status.
+    If the game doesn't require approval, it will be auto-approved.
 
     Returns 201 with the created character.
     """
@@ -50,6 +55,7 @@ def create_character(game_id: int):
 
     name = data.get("name")
     character_data = data.get("data", {})
+    submit_for_approval = data.get("submit_for_approval", False)
 
     if not name or not name.strip():
         return error_response(
@@ -66,10 +72,14 @@ def create_character(game_id: int):
             user_id=g.auth_user.user_id,
             name=name.strip(),
             data=character_data,
+            submit_for_approval=submit_for_approval,
         )
         db.get_session().commit()
         return jsonify(CharacterPresenter.public(character)), 201
     except ValueError as e:
+        error_msg = str(e).lower()
+        if "not found" in error_msg:
+            return error_response("NOT_FOUND", str(e), status_code=404)
         return error_response("VALIDATION_ERROR", str(e), status_code=400)
 
 
@@ -200,44 +210,6 @@ def update_character(game_id: int, character_id: int):
         if "not found" in error_msg:
             return error_response("CHARACTER_NOT_FOUND", str(e), status_code=404)
         if "cannot be edited" in error_msg or "only update your own" in error_msg:
-            return error_response("FORBIDDEN", str(e), status_code=403)
-        return error_response("VALIDATION_ERROR", str(e), status_code=400)
-
-
-@character_bp.post("/<int:game_id>/character/<int:character_id>/submit")
-@auth_required
-def submit_character(game_id: int, character_id: int):
-    """
-    Submit a character for DM approval.
-
-    The character must be in DRAFT or REJECTED status.
-    If the game doesn't require approval, the character is auto-approved.
-
-    Returns the character with updated status.
-    """
-    character_service = get_character_service()
-
-    try:
-        # First verify the character belongs to this game
-        character = character_service.get_character(character_id, g.auth_user.user_id)
-        if not character or character.game_id != game_id:
-            return error_response(
-                "CHARACTER_NOT_FOUND",
-                "Character not found in this game",
-                status_code=404,
-            )
-
-        submitted_character = character_service.submit_for_approval(
-            character_id=character_id,
-            user_id=g.auth_user.user_id,
-        )
-        db.get_session().commit()
-        return jsonify(CharacterPresenter.public(submitted_character)), 200
-    except ValueError as e:
-        error_msg = str(e).lower()
-        if "not found" in error_msg:
-            return error_response("CHARACTER_NOT_FOUND", str(e), status_code=404)
-        if "only submit your own" in error_msg:
             return error_response("FORBIDDEN", str(e), status_code=403)
         return error_response("VALIDATION_ERROR", str(e), status_code=400)
 
