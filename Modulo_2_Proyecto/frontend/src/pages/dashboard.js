@@ -250,38 +250,19 @@ function openGameCreator() {
 
 function setupJoinGameForm() {
   const form = document.getElementById('join-game-form')
-  const submitBtn = document.getElementById('join-game-btn')
 
-  form.addEventListener('submit', async (event) => {
+  form.addEventListener('submit', (event) => {
     event.preventDefault()
 
     const formData = new FormData(form)
-    const inviteCode = formData.get('invite_code')
+    const inviteCode = formData.get('invite_code')?.trim()
 
-    setButtonLoading(submitBtn, true)
-    hideMessage()
-
-    try {
-      const response = await fetchWithAuth('/api/v1/game/join-by-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ invite_code: inviteCode })
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Failed to join game')
-      }
-
-      const result = await response.json()
-      showMessage(`Successfully joined "${result.name}"!`, 'success')
-      form.reset()
-      await loadGames()
-    } catch (error) {
-      showMessage(error.message, 'error')
-    } finally {
-      setButtonLoading(submitBtn, false)
+    if (!inviteCode) {
+      showMessage('Please enter an invite code', 'error')
+      return
     }
+
+    navigate(`/join/${inviteCode}`)
   })
 }
 

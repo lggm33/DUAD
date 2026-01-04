@@ -1,0 +1,164 @@
+/* ========================================
+   Join Game Page
+   ======================================== */
+
+.join-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: var(--space-xl);
+  position: relative;
+  overflow: hidden;
+}
+
+.join-card {
+  width: 100%;
+  max-width: 420px;
+  padding: var(--space-2xl);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+/* ========================================
+   Loading State
+   ======================================== */
+
+.join-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--space-xl) 0;
+}
+
+.join-loading[hidden] {
+  display: none;
+}
+
+.join-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-cyan);
+  border-radius: 50%;
+  animation: join-spin 0.8s linear infinite;
+}
+
+@keyframes join-spin {
+  to { transform: rotate(360deg); }
+}
+
+.join-status {
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+}
+
+/* ========================================
+   Error State
+   ======================================== */
+
+.join-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-lg) 0;
+}
+
+.join-error[hidden] {
+  display: none;
+}
+
+.join-error-icon {
+  color: var(--color-red);
+}
+
+.join-error-title {
+  font-size: 1.25rem;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.join-error-message {
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-md);
+}
+
+/* ========================================
+   Success State
+   ======================================== */
+
+.join-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-lg) 0;
+}
+
+.join-success[hidden] {
+  display: none;
+}
+
+.join-success-icon {
+  color: var(--color-green);
+}
+
+.join-success-title {
+  font-size: 1.25rem;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.join-success-message {
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* ========================================
+   Decorative Orbs (reusing auth pattern)
+   ======================================== */
+
+.join-decoration {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.join-decoration .decoration-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+}
+
+.join-decoration .decoration-orb-1 {
+  width: 400px;
+  height: 400px;
+  background: var(--color-navy);
+  top: -100px;
+  right: -100px;
+}
+
+.join-decoration .decoration-orb-2 {
+  width: 300px;
+  height: 300px;
+  background: var(--color-cyan-dark);
+  bottom: -50px;
+  left: -50px;
+}
+
+.join-decoration .decoration-orb-3 {
+  width: 200px;
+  height: 200px;
+  background: var(--color-turquoise);
+  top: 50%;
+  right: 20%;
+}
+

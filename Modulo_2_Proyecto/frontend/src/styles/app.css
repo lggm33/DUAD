@@ -22,6 +22,7 @@
 @import './pages/auth.css';
 @import './pages/dashboard.css';
 @import './pages/game.css';
+@import './pages/join.css';
 
 /* Layout */
 @import './layout/responsive.css';

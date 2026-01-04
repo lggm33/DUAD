@@ -209,6 +209,8 @@ class GameService:
         """
         Join a game using an invite code.
         Returns both the game and the membership.
+        
+        If user is already an active member, returns existing membership.
         """
         invite = self._game_invites_repository.get_game_invite_by_code(invite_code)
         if invite is None:
@@ -216,6 +218,15 @@ class GameService:
 
         if not invite.is_valid():
             raise ValueError("Invite code is no longer valid")
+
+        existing_membership = (
+            self._game_membership_repository.get_game_membership_by_game_id_and_user_id(
+                invite.game_id, user_id
+            )
+        )
+        
+        if existing_membership and existing_membership.status == GameMembershipStatus.ACTIVE:
+            return {"game": invite.game, "membership": existing_membership}
 
         membership = self.join_game(invite.game_id, user_id)
         return {"game": invite.game, "membership": membership}
