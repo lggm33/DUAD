@@ -53,7 +53,25 @@ def create_app() -> Flask:
     app.register_blueprint(encounter_bp)
     _register_error_handlers(app)
 
+    # Seed default ruleset templates on startup
+    with app.app_context():
+        _seed_default_templates()
+
     return app
+
+
+def _seed_default_templates() -> None:
+    """Seed default ruleset templates if they don't exist."""
+    try:
+        from app.domain.games.seed_templates import seed_ruleset_templates
+        
+        session = db.get_session()
+        created = seed_ruleset_templates(session)
+        if created:
+            print(f"[Seed] Created {len(created)} default ruleset templates")
+        session.close()
+    except Exception as e:
+        print(f"[Seed] Warning: Could not seed templates: {e}")
 
 
 def _register_error_handlers(app: Flask) -> None:

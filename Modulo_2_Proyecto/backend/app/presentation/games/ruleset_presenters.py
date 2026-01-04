@@ -49,10 +49,17 @@ class RulesetPresenter(Presenter):
     @staticmethod
     def templates_collection(
         templates: list[RulesetTemplate],
+        include_rules: bool = True,
     ) -> list[dict[str, Any]]:
         """
         Returns a list of public dictionaries for a collection of RulesetTemplates.
+        
+        Args:
+            templates: List of RulesetTemplate instances
+            include_rules: Whether to include base_rules in the response
         """
+        if include_rules:
+            return [RulesetPresenter.template_with_rules(t) for t in templates]
         return [RulesetPresenter.template(t) for t in templates]
 
 

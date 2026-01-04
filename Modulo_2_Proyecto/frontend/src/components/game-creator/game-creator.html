@@ -1,0 +1,33 @@
+<div id="game-creator-modal" class="game-creator-overlay" hidden>
+  <div class="game-creator-modal">
+    <div class="game-creator-header">
+      <div class="game-creator-header-left">
+        <div class="game-creator-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+            <path d="M2 17l10 5 10-5"></path>
+            <path d="M2 12l10 5 10-5"></path>
+          </svg>
+        </div>
+        <h2 class="game-creator-title">Create New Game</h2>
+      </div>
+      <button id="gc-close-btn" class="game-creator-close" type="button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="game-creator-body" id="gc-form-container">
+      <!-- Form content rendered dynamically -->
+    </div>
+    <div class="game-creator-footer">
+      <button id="gc-cancel-btn" class="gc-btn gc-btn-ghost" type="button">Cancel</button>
+      <button id="gc-submit-btn" class="gc-btn gc-btn-primary" type="button">
+        <span class="btn-text">Create Game</span>
+        <span class="btn-loader loader" hidden></span>
+      </button>
+    </div>
+  </div>
+</div>
+

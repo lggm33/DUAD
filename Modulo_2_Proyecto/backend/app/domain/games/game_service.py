@@ -13,6 +13,7 @@ from app.domain.games.models import (
     GameMembershipStatus,
     GameStatus,
 )
+from app.domain.games.ruleset_models import CUSTOM_TEMPLATE_ID, RulesetSystemType, RulesetTemplate
 from app.domain.games.schemas.validators import (
     get_effective_rules,
     merge_rules,
@@ -24,6 +25,7 @@ from app.domain.games.schemas.validators import (
 from app.domain.games.game_repository import GameRepository
 from app.domain.games.game_invites_repository import GameInvitesRepository
 from app.domain.games.game_membership_repository import GameMembershipRepository
+from app.domain.games.ruleset_repository import RulesetRepository
 from app.domain.users.user_repository import UserRepository
 from app.domain.auth.models import AuthUser
 from app.domain.users.models import UserRole
@@ -56,15 +58,29 @@ class GameService:
         game_invites_repository: GameInvitesRepository,
         game_membership_repository: GameMembershipRepository,
         user_repository: UserRepository,
+        ruleset_repository: RulesetRepository,
     ) -> None:
         self._game_repository = game_repository
         self._game_invites_repository = game_invites_repository
         self._game_membership_repository = game_membership_repository
         self._user_repository = user_repository
+        self._ruleset_repository = ruleset_repository
 
-    def create_game(self, name: str, dm_user_id: int) -> CreateGameResult:
+    def create_game(
+        self,
+        name: str,
+        dm_user_id: int,
+        ruleset_template_id: int | None = None,
+        custom_rules: dict[str, Any] | None = None,
+    ) -> CreateGameResult:
         """
-        Create a new game.
+        Create a new game with optional ruleset configuration.
+        
+        Args:
+            name: Name of the game
+            dm_user_id: ID of the user who will be the DM
+            ruleset_template_id: ID of the ruleset template to use
+            custom_rules: Optional custom rules to override template defaults
         """
 
         # Verify DM user exists
@@ -72,13 +88,58 @@ class GameService:
             raise ValueError("DM user not found")
 
         # Verify DM user is not already a DM of another active game
-        existing_game = self._game_repository.get_game_by_dm_user_id(dm_user_id)
+        # existing_game = self._game_repository.get_game_by_dm_user_id(dm_user_id)
 
-        if existing_game is not None and existing_game.status == GameStatus.ACTIVE:
-            raise ValueError("DM user is already a DM of another active game")
+        # if existing_game is not None and existing_game.status == GameStatus.ACTIVE:
+        #     raise ValueError("DM user is already a DM of another active game")
 
-        # Create game
-        game = Game(name=name, dm_user_id=dm_user_id, status=GameStatus.ACTIVE)
+        # Validate ruleset template if provided
+
+        if ruleset_template_id is None:
+            raise ValueError("Ruleset template ID is required")
+
+        template = self._ruleset_repository.get_by_id(ruleset_template_id)
+        
+        if template is None:
+            raise ValueError("Ruleset template not found")
+        
+        # Check access: system templates are public, user templates require ownership
+        if not template.is_system_provided:
+            if template.created_by_user_id != dm_user_id:
+                raise PermissionError("You don't have access to this template")
+
+        # Handle custom template logic
+        final_template_id = ruleset_template_id
+        
+        if ruleset_template_id == CUSTOM_TEMPLATE_ID:
+            # Custom template requires custom_rules from the user
+            if not custom_rules:
+                raise ValueError("Custom rules are required when using the Custom template")
+            
+            validated_rules = validate_custom_rules(custom_rules)
+            
+            # Create a new user-owned template with the custom rules
+            user_template = RulesetTemplate(
+                name=f"{name} - Custom Rules",
+                description=f"Custom ruleset created for game: {name}",
+                system_type=RulesetSystemType.CUSTOM,
+                base_rules=validated_rules,
+                is_system_provided=False,
+                created_by_user_id=dm_user_id,
+            )
+            created_template = self._ruleset_repository.create(user_template)
+            final_template_id = created_template.id
+        
+        # For other templates, use the template's base_rules directly
+
+        # Create game with ruleset configuration
+        game = Game(
+            name=name,
+            dm_user_id=dm_user_id,
+            status=GameStatus.ACTIVE,
+            ruleset_template_id=final_template_id,
+            custom_rules=None,
+        )
         new_game = self._game_repository.create_game(game)
 
         # Create game membership for DM user

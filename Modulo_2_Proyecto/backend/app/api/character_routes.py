@@ -81,10 +81,12 @@ def get_game_characters(game_id: int):
 
     Query params:
     - include_pending: bool (optional, DM only) - Include pending approval characters
+    - status: string (optional) - Filter by character status (APPROVED, DRAFT, etc.)
 
     Returns list of characters.
     """
     include_pending = request.args.get("include_pending", "false").lower() == "true"
+    status_filter = request.args.get("status")
 
     character_service = get_character_service()
 
@@ -94,6 +96,12 @@ def get_game_characters(game_id: int):
             user_id=g.auth_user.user_id,
             include_pending=include_pending,
         )
+
+        # Apply status filter if provided
+        if status_filter:
+            status_filter = status_filter.upper()
+            characters = [c for c in characters if c.status.value == status_filter]
+
         return jsonify(CharacterPresenter.collection(characters)), 200
     except ValueError as e:
         return error_response("FORBIDDEN", str(e), status_code=403)

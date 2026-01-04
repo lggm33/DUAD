@@ -1,0 +1,654 @@
+/* ========================================
+   Game Creator Component Styles
+   ======================================== */
+
+/* ========================================
+   Modal Base
+   ======================================== */
+.game-creator-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  animation: gcFadeIn 0.25s ease-out;
+  padding: var(--space-lg);
+  overflow-y: auto;
+}
+
+.game-creator-overlay[hidden] {
+  display: none;
+}
+
+@keyframes gcFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.game-creator-modal {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: gcSlideIn 0.3s ease-out;
+  box-shadow: 
+    0 0 60px rgba(168, 85, 247, 0.15),
+    var(--shadow-lg);
+}
+
+@keyframes gcSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ========================================
+   Modal Header
+   ======================================== */
+.game-creator-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: 1px solid var(--color-border);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.08) 0%, transparent 100%);
+}
+
+.game-creator-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.game-creator-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+  color: var(--color-text-inverse);
+}
+
+.game-creator-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.game-creator-title {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.game-creator-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.game-creator-close:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text);
+}
+
+/* ========================================
+   Modal Body
+   ======================================== */
+.game-creator-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-xl);
+}
+
+/* ========================================
+   Form Sections
+   ======================================== */
+.gc-section {
+  margin-bottom: var(--space-lg);
+}
+
+.gc-section:last-child {
+  margin-bottom: 0;
+}
+
+.gc-section-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.gc-section-title svg {
+  width: 16px;
+  height: 16px;
+  color: var(--color-primary);
+}
+
+/* ========================================
+   Form Groups
+   ======================================== */
+.gc-form-group {
+  margin-bottom: var(--space-md);
+}
+
+.gc-form-group:last-child {
+  margin-bottom: 0;
+}
+
+.gc-label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: var(--space-xs);
+}
+
+.gc-label-hint {
+  font-weight: 400;
+  color: var(--color-text-muted);
+  margin-left: var(--space-xs);
+}
+
+.gc-input,
+.gc-select {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--text-base);
+  color: var(--color-text);
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.gc-input:focus,
+.gc-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
+}
+
+.gc-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.gc-select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 40px;
+}
+
+/* ========================================
+   Collapsible Sections
+   ======================================== */
+.gc-collapsible {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: var(--space-md);
+  transition: all 0.2s ease;
+}
+
+.gc-collapsible:hover {
+  border-color: var(--color-border-hover);
+}
+
+.gc-collapsible:last-child {
+  margin-bottom: 0;
+}
+
+.gc-collapsible-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-bg-secondary);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+}
+
+.gc-collapsible-header:hover {
+  background: var(--color-bg-hover);
+}
+
+.gc-collapsible-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.gc-collapsible-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(34, 211, 238, 0.1) 100%);
+  color: var(--color-primary);
+}
+
+.gc-collapsible-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.gc-collapsible-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.gc-collapsible-chevron {
+  width: 20px;
+  height: 20px;
+  color: var(--color-text-muted);
+  transition: transform 0.2s ease;
+}
+
+.gc-collapsible.is-open .gc-collapsible-chevron {
+  transform: rotate(180deg);
+}
+
+.gc-collapsible-content {
+  padding: 0 var(--space-lg) var(--space-lg);
+  display: none;
+}
+
+.gc-collapsible.is-open .gc-collapsible-content {
+  display: block;
+  padding-top: var(--space-md);
+}
+
+/* ========================================
+   Row Layout
+   ======================================== */
+.gc-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+}
+
+@media (max-width: 480px) {
+  .gc-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ========================================
+   Toggle Switch
+   ======================================== */
+.gc-toggle-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) 0;
+}
+
+.gc-toggle-label {
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.gc-toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.gc-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.gc-toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: var(--color-bg-tertiary);
+  border-radius: 24px;
+  transition: all 0.2s ease;
+  border: 1px solid var(--color-border);
+}
+
+.gc-toggle-slider::before {
+  content: "";
+  position: absolute;
+  height: 18px;
+  width: 18px;
+  left: 2px;
+  bottom: 2px;
+  background: var(--color-text-muted);
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.gc-toggle input:checked + .gc-toggle-slider {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.gc-toggle input:checked + .gc-toggle-slider::before {
+  transform: translateX(20px);
+  background: white;
+}
+
+.gc-toggle input:focus + .gc-toggle-slider {
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
+}
+
+/* ========================================
+   Radio Group
+   ======================================== */
+.gc-radio-group {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.gc-radio {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  cursor: pointer;
+}
+
+.gc-radio input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+}
+
+.gc-radio-label {
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+/* ========================================
+   Number Input with Unit
+   ======================================== */
+.gc-number-input {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.gc-number-input input {
+  width: 80px;
+  text-align: center;
+}
+
+.gc-number-unit {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* ========================================
+   Loading State
+   ======================================== */
+.gc-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2xl);
+  gap: var(--space-md);
+  color: var(--color-text-muted);
+}
+
+/* ========================================
+   Modal Footer
+   ======================================== */
+.game-creator-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-lg) var(--space-xl);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+}
+
+.gc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 100px;
+}
+
+.gc-btn-ghost {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.gc-btn-ghost:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-hover);
+}
+
+.gc-btn-primary {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+  border: none;
+  color: white;
+  font-weight: 600;
+}
+
+.gc-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
+}
+
+.gc-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.gc-btn .loader {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+/* ========================================
+   Error Message
+   ======================================== */
+.gc-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--color-error);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.gc-error svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* ========================================
+   Template Info
+   ======================================== */
+.gc-template-info {
+  background: rgba(168, 85, 247, 0.05);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  margin-top: var(--space-sm);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.gc-template-info svg {
+  width: 16px;
+  height: 16px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+/* ========================================
+   Subsections
+   ======================================== */
+.gc-subsection {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.gc-subsection-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* ========================================
+   Checkbox Grid
+   ======================================== */
+.gc-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--space-xs);
+  max-height: 200px;
+  overflow-y: auto;
+  padding: var(--space-sm);
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.gc-checkbox-grid-banned {
+  background: rgba(239, 68, 68, 0.05);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.gc-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  transition: background 0.15s ease;
+}
+
+.gc-checkbox-item:hover {
+  background: var(--color-bg-hover);
+}
+
+.gc-checkbox-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.gc-checkbox-grid-banned .gc-checkbox-item input[type="checkbox"] {
+  accent-color: var(--color-error);
+}
+
+.gc-checkbox-item span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ========================================
+   Responsive
+   ======================================== */
+@media (max-width: 640px) {
+  .game-creator-overlay {
+    padding: var(--space-md);
+  }
+
+  .game-creator-modal {
+    max-height: 95vh;
+  }
+
+  .game-creator-header {
+    padding: var(--space-md);
+  }
+
+  .game-creator-body {
+    padding: var(--space-md);
+  }
+
+  .game-creator-footer {
+    padding: var(--space-md);
+    flex-direction: column-reverse;
+  }
+
+  .gc-btn {
+    width: 100%;
+  }
+
+  .gc-collapsible-header {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .gc-collapsible-content {
+    padding: 0 var(--space-md) var(--space-md);
+  }
+}
+

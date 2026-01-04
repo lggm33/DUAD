@@ -1,0 +1,415 @@
+/* ========================================
+   Reconnect Overlay Component Styles
+   ======================================== */
+
+/* ========================================
+   Main Overlay Container
+   ======================================== */
+.reconnect-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 14, 23, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-base), visibility var(--transition-base);
+}
+
+.reconnect-overlay[hidden] {
+  display: none;
+}
+
+.reconnect-overlay.ro-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.reconnect-overlay.ro-hiding {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* ========================================
+   Content Container
+   ======================================== */
+.ro-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xl);
+  padding: var(--space-3xl);
+  max-width: 480px;
+  text-align: center;
+  animation: roSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes roSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ========================================
+   Spinner Animation
+   ======================================== */
+.ro-spinner {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+
+.ro-spinner-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  animation: roSpin 1.5s linear infinite;
+}
+
+.ro-spinner-ring:nth-child(1) {
+  border-top-color: var(--color-cyan);
+  animation-delay: 0s;
+}
+
+.ro-spinner-ring:nth-child(2) {
+  inset: 8px;
+  border-right-color: var(--color-turquoise);
+  animation-delay: 0.15s;
+  animation-direction: reverse;
+}
+
+.ro-spinner-ring:nth-child(3) {
+  inset: 16px;
+  border-bottom-color: var(--color-cyan-light);
+  animation-delay: 0.3s;
+}
+
+@keyframes roSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========================================
+   Typography
+   ======================================== */
+.ro-title {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.ro-title-success {
+  color: var(--color-success);
+}
+
+.ro-title-failed {
+  color: var(--color-error);
+}
+
+.ro-message {
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ========================================
+   Attempts Counter
+   ======================================== */
+.ro-attempts {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  max-width: 280px;
+}
+
+.ro-attempts-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono, monospace);
+}
+
+.ro-attempts-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.ro-attempts-progress {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-cyan-dark) 0%, var(--color-cyan) 100%);
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease-out;
+}
+
+/* ========================================
+   Note Section
+   ======================================== */
+.ro-note {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  border-radius: var(--radius-lg);
+  color: var(--color-cyan);
+  font-size: 0.875rem;
+}
+
+.ro-note-icon {
+  flex-shrink: 0;
+}
+
+/* ========================================
+   Success State
+   ======================================== */
+.ro-content-success .ro-success-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.1);
+  border: 2px solid var(--color-success);
+  color: var(--color-success);
+  animation: roSuccessPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes roSuccessPop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.ro-sync-indicator {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.ro-sync-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--color-success);
+  border-radius: 50%;
+  animation: roSyncPulse 1.4s ease-in-out infinite;
+}
+
+.ro-sync-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.ro-sync-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes roSyncPulse {
+  0%, 80%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ========================================
+   Failed State
+   ======================================== */
+.ro-content-failed .ro-failed-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.1);
+  border: 2px solid var(--color-error);
+  color: var(--color-error);
+  animation: roFailedShake 0.5s ease-in-out;
+}
+
+@keyframes roFailedShake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  20%, 60% {
+    transform: translateX(-5px);
+  }
+  40%, 80% {
+    transform: translateX(5px);
+  }
+}
+
+/* ========================================
+   Action Buttons
+   ======================================== */
+.ro-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  width: 100%;
+  max-width: 280px;
+}
+
+.ro-btn-retry {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-md) var(--space-xl);
+  background: linear-gradient(135deg, var(--color-cyan-dark) 0%, var(--color-cyan) 100%);
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--color-bg-dark);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.ro-btn-retry:hover {
+  box-shadow: 0 0 30px rgba(34, 211, 238, 0.4);
+  transform: translateY(-2px);
+}
+
+.ro-btn-retry:active {
+  transform: translateY(0);
+}
+
+.ro-btn-dashboard {
+  width: 100%;
+  padding: var(--space-sm) var(--space-lg);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.ro-btn-dashboard:hover {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-text-muted);
+  color: var(--color-text-primary);
+}
+
+/* ========================================
+   Hint Text
+   ======================================== */
+.ro-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  margin-top: var(--space-md);
+  line-height: 1.5;
+}
+
+/* ========================================
+   Responsive Adjustments
+   ======================================== */
+@media (max-width: 480px) {
+  .ro-content {
+    padding: var(--space-xl);
+    gap: var(--space-lg);
+  }
+
+  .ro-title {
+    font-size: 1.5rem;
+  }
+
+  .ro-spinner {
+    width: 64px;
+    height: 64px;
+  }
+
+  .ro-success-icon,
+  .ro-failed-icon {
+    width: 80px;
+    height: 80px;
+  }
+
+  .ro-success-icon svg,
+  .ro-failed-icon svg {
+    width: 48px;
+    height: 48px;
+  }
+
+  .ro-note {
+    padding: var(--space-sm) var(--space-md);
+    font-size: 0.8125rem;
+  }
+}
+
+/* ========================================
+   Reduced Motion
+   ======================================== */
+@media (prefers-reduced-motion: reduce) {
+  .reconnect-overlay {
+    transition: none;
+  }
+
+  .ro-content {
+    animation: none;
+  }
+
+  .ro-spinner-ring {
+    animation: roSpinSlow 3s linear infinite;
+  }
+
+  @keyframes roSpinSlow {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  .ro-sync-dot {
+    animation: none;
+    opacity: 1;
+  }
+
+  .ro-success-icon,
+  .ro-failed-icon {
+    animation: none;
+  }
+}
+

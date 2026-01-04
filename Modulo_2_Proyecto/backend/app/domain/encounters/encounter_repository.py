@@ -95,10 +95,30 @@ class EncounterRepository:
             .all()
         )
 
+    def get_participant_by_id(
+        self,
+        participant_id: int,
+    ) -> Optional[EncounterParticipant]:
+        """Get a participant by ID."""
+        return (
+            self._session.query(EncounterParticipant)
+            .filter_by(id=participant_id)
+            .first()
+        )
+
     def remove_participant(self, participant: EncounterParticipant) -> None:
         """Remove a participant from an encounter."""
         self._session.delete(participant)
         self._session.flush()
+
+    def remove_participant_by_id(self, participant_id: int) -> bool:
+        """Remove a participant by ID. Returns True if deleted, False if not found."""
+        participant = self.get_participant_by_id(participant_id)
+        if not participant:
+            return False
+        self._session.delete(participant)
+        self._session.flush()
+        return True
 
     # =========================================================================
     # State operations

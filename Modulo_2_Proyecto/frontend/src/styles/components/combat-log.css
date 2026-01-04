@@ -1,0 +1,355 @@
+/* ========================================
+   Combat Log Component
+   Real-time feed of combat actions
+   ======================================== */
+
+.combat-log-section {
+  border-left: 3px solid var(--color-warning);
+}
+
+.combat-log-container {
+  display: flex;
+  flex-direction: column;
+  height: 320px;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* Header */
+.combat-log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-bg-card);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.combat-log-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.combat-log-title svg {
+  color: var(--color-warning);
+}
+
+/* Filter Dropdown */
+.combat-log-filter {
+  position: relative;
+}
+
+.combat-log-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.combat-log-filter-btn:hover {
+  color: var(--color-text-secondary);
+  border-color: var(--color-text-muted);
+}
+
+.combat-log-filter-btn svg {
+  transition: transform var(--transition-fast);
+}
+
+.combat-log-filter-dropdown.is-open + .combat-log-filter-btn svg,
+.combat-log-filter-btn:focus svg {
+  transform: rotate(180deg);
+}
+
+.combat-log-filter-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 140px;
+  margin-top: var(--space-xs);
+  padding: var(--space-xs);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: all var(--transition-fast);
+  z-index: 100;
+}
+
+.combat-log-filter-dropdown.is-open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.combat-log-filter-option {
+  display: block;
+  width: 100%;
+  padding: var(--space-xs) var(--space-sm);
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.combat-log-filter-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-primary);
+}
+
+.combat-log-filter-option.is-active {
+  background: rgba(34, 211, 238, 0.1);
+  color: var(--color-cyan);
+}
+
+/* Log List */
+.combat-log-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Scrollbar Styling */
+.combat-log-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.combat-log-list::-webkit-scrollbar-track {
+  background: var(--color-bg-dark);
+  border-radius: 3px;
+}
+
+.combat-log-list::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+.combat-log-list::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Loading & Empty States */
+.combat-log-loading,
+.combat-log-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  height: 100%;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.combat-log-loading[hidden],
+.combat-log-empty[hidden] {
+  display: none;
+}
+
+/* Log Entry */
+.combat-log-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-card);
+  transition: background var(--transition-fast);
+}
+
+.combat-log-entry:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.combat-log-entry.is-new {
+  animation: logSlideIn 0.25s ease-out;
+}
+
+@keyframes logSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.combat-log-time {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+  font-family: monospace;
+  min-width: 42px;
+}
+
+.combat-log-icon {
+  flex-shrink: 0;
+  font-size: 0.875rem;
+  line-height: 1;
+}
+
+.combat-log-message {
+  flex: 1;
+  color: var(--color-text-secondary);
+  word-break: break-word;
+}
+
+/* Action Type Specific Styles */
+.combat-log-entry[data-action-type="ATTACK"] .combat-log-message,
+.combat-log-entry[data-action-type="DAMAGE"] .combat-log-message {
+  color: var(--color-error);
+}
+
+.combat-log-entry[data-action-type="HEAL"] .combat-log-message {
+  color: var(--color-success);
+}
+
+.combat-log-entry[data-action-type="SPELL"] .combat-log-message,
+.combat-log-entry[data-action-type="ABILITY"] .combat-log-message {
+  color: var(--color-cyan);
+}
+
+.combat-log-entry[data-action-type="DEATH"] .combat-log-message {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+.combat-log-entry[data-action-type="TURN_START"] .combat-log-message,
+.combat-log-entry[data-action-type="TURN_END"] .combat-log-message {
+  color: var(--color-warning);
+  font-style: italic;
+}
+
+.combat-log-entry[data-action-type="DM_OVERRIDE"] {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.combat-log-entry[data-action-type="DM_OVERRIDE"] .combat-log-message {
+  color: var(--color-warning);
+}
+
+/* Round Divider */
+.combat-log-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
+  margin: var(--space-xs) 0;
+}
+
+.combat-log-divider.is-new {
+  animation: logSlideIn 0.25s ease-out;
+}
+
+.combat-log-divider-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--color-border),
+    transparent
+  );
+}
+
+.combat-log-divider-text {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-warning);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-bg-dark);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+/* Encounter End */
+.combat-log-end {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  margin-top: var(--space-sm);
+  background: linear-gradient(
+    135deg,
+    rgba(34, 211, 238, 0.1) 0%,
+    rgba(20, 184, 166, 0.1) 100%
+  );
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  border-radius: var(--radius-md);
+}
+
+.combat-log-end.is-new {
+  animation: logSlideIn 0.25s ease-out;
+}
+
+.combat-log-end-icon {
+  font-size: 1.5rem;
+}
+
+.combat-log-end-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.combat-log-end-text strong {
+  font-size: 0.9375rem;
+  color: var(--color-cyan);
+}
+
+.combat-log-end-text span {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+/* Initiative Roll Highlight */
+.combat-log-entry[data-action-type="INITIATIVE_ROLL"] {
+  background: rgba(100, 116, 139, 0.1);
+  border-left: 2px solid var(--color-text-muted);
+}
+
+/* ========================================
+   Responsive
+   ======================================== */
+@media (max-width: 768px) {
+  .combat-log-container {
+    height: 280px;
+  }
+
+  .combat-log-entry {
+    font-size: 0.75rem;
+  }
+
+  .combat-log-time {
+    display: none;
+  }
+}
+

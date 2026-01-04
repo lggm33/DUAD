@@ -254,6 +254,13 @@
   border-left: 3px solid var(--color-cyan);
 }
 
+/* ========================================
+   NPC Section
+   ======================================== */
+.npc-section {
+  border-left: 3px solid var(--color-warning);
+}
+
 .dm-controls {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));

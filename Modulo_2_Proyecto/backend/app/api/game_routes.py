@@ -5,6 +5,7 @@ from app.domain.games.game_service import GameService
 from app.domain.games.game_repository import GameRepository
 from app.domain.games.game_invites_repository import GameInvitesRepository
 from app.domain.games.game_membership_repository import GameMembershipRepository
+from app.domain.games.ruleset_repository import RulesetRepository
 from app.domain.games.models import GameRoleInGame, GameMembershipStatus
 from app.domain.games.schemas.validators import RulesValidationError
 from app.domain.users.user_repository import UserRepository
@@ -23,20 +24,52 @@ def get_game_service() -> GameService:
     game_invites_repo = GameInvitesRepository(session)
     game_membership_repo = GameMembershipRepository(session)
     user_repo = UserRepository(session)
-    return GameService(game_repo, game_invites_repo, game_membership_repo, user_repo)
+    ruleset_repo = RulesetRepository(session)
+    return GameService(game_repo, game_invites_repo, game_membership_repo, user_repo, ruleset_repo)
 
 @game_bp.post("/create")
 @roles_required("ADMIN", "USER")
 def create_game():
+    """
+    Create a new game with ruleset configuration.
+    
+    Request body:
+    {
+        "name": "Game Name",
+        "dm_user_id": 1,
+        "ruleset_template_id": 1,  
+        "custom_rules": { ... } | null   
+    }
+    """
     data = request.get_json()
-    print(data)
-    if not data or "name" not in data or "dm_user_id" not in data:
-        return error_response("VALIDATION_ERROR", "Name and DM user ID are required", status_code=400)
+
+    params_required = ["name", "dm_user_id", "ruleset_template_id"]
+
+    if not data or not all(param in data for param in params_required):
+        return error_response(
+            "VALIDATION_ERROR",
+            f"Missing required parameters: {', '.join(params_required)}",
+            status_code=400,
+        )
 
     game_service = get_game_service()
     try:
-        create_game_result = game_service.create_game(data["name"], int(data["dm_user_id"]))
+        create_game_result = game_service.create_game(
+            name=data["name"],
+            dm_user_id=int(data["dm_user_id"]),
+            ruleset_template_id=int(data["ruleset_template_id"]),
+            custom_rules=data.get("custom_rules"),
+        )
         return jsonify(GamePresenter.public(create_game_result)), 201
+    except RulesValidationError as e:
+        return error_response(
+            "VALIDATION_ERROR",
+            e.message,
+            details=e.errors if e.errors else None,
+            status_code=400,
+        )
+    except PermissionError as e:
+        return error_response("FORBIDDEN", str(e), status_code=403)
     except ValueError as e:
         return error_response("VALIDATION_ERROR", str(e), status_code=400)
 

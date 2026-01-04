@@ -30,6 +30,12 @@ class RulesetSystemType(str, Enum):
     CUSTOM = "CUSTOM"
 
 
+# ID of the Custom template in the database (from seed_templates.py)
+# When this template is selected, custom_rules from the frontend are required
+# instead of using the template's base_rules directly
+CUSTOM_TEMPLATE_ID = 3
+
+
 class RulesetTemplate(Base, IntPrimaryKeyMixin, TimestampMixin):
     """
     Template for game rules configuration.

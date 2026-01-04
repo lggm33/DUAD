@@ -1,5 +1,16 @@
 import template from './game.html?raw'
-import { Footer, showConfirmModal, GameChat, CharacterCreator } from '../components/index.js'
+import { 
+  Footer, 
+  showConfirmModal, 
+  GameChat, 
+  CharacterCreator, 
+  NPCManager, 
+  CombatTracker,
+  CombatLog,
+  EncounterBuilder,
+  ReconnectOverlay,
+  ActionPanel
+} from '../components/index.js'
 import { navigate, getRouteParams, onBeforeRouteChange } from '../router.js'
 import { getUserFromToken } from '../infrastructure/auth/auth.js'
 import { fetchWithAuth, escapeHtml, getInitials } from '../utils/index.js'
@@ -11,6 +22,12 @@ let currentUser = null
 let unsubscribeRouteChange = null
 let characterCreator = null
 let currentCharacter = null
+let npcManager = null
+let combatTracker = null
+let combatLog = null
+let encounterBuilder = null
+let reconnectOverlay = null
+let actionPanel = null
 
 export function gamePage(app) {
   app.innerHTML = template + Footer()
@@ -54,6 +71,12 @@ async function loadGame(gameId) {
     await loadUserCharacter(gameId)
     
     initChatComponent(gameId)
+    
+    // Initialize reconnect overlay for connection loss handling
+    initReconnectOverlay()
+    
+    // Check for active encounter and initialize combat tracker
+    await checkActiveEncounter(gameId)
 
   } catch (error) {
     loadingEl.hidden = true
@@ -68,6 +91,25 @@ function initChatComponent(gameId) {
   })
   
   gameChat.init()
+}
+
+function initNPCManager(gameId) {
+  npcManager = new NPCManager({
+    gameId,
+    onNPCCreated: (npc) => {
+      console.log('NPC created:', npc)
+    },
+    onNPCUpdated: (npc) => {
+      console.log('NPC updated:', npc)
+    },
+    onNPCDeleted: (npcId) => {
+      console.log('NPC deleted:', npcId)
+    },
+    onError: (message) => showMessage(message, 'error'),
+    onSuccess: (message) => showMessage(message, 'success')
+  })
+  
+  npcManager.init()
 }
 
 function renderGameInfo(game) {
@@ -86,10 +128,14 @@ function renderGameInfo(game) {
   roleBadge.className = `game-role-badge ${isDM ? 'role-dm' : 'role-player'}`
 
   const dmSection = document.getElementById('dm-section')
+  const npcSection = document.getElementById('npc-section')
   if (isDM) {
     dmSection.hidden = false
+    npcSection.hidden = false
     loadInviteCode(game.id)
     setupCopyInviteButton()
+    setupEncounterButton()
+    initNPCManager(game.id)
   }
 
   const leaveBtn = document.getElementById('leave-game-btn')
@@ -122,6 +168,16 @@ function setupCopyInviteButton() {
       }
     }
   })
+}
+
+function setupEncounterButton() {
+  const createEncounterBtn = document.getElementById('create-encounter-btn')
+  
+  if (createEncounterBtn) {
+    createEncounterBtn.addEventListener('click', () => {
+      openEncounterBuilder()
+    })
+  }
 }
 
 function setupLeaveButton(gameId) {
@@ -295,12 +351,331 @@ function cleanupGamePage() {
     characterCreator = null
   }
   
+  if (npcManager) {
+    npcManager.destroy()
+    npcManager = null
+  }
+  
+  if (combatTracker) {
+    combatTracker.destroy()
+    combatTracker = null
+  }
+  
+  if (combatLog) {
+    combatLog.destroy()
+    combatLog = null
+  }
+  
+  if (actionPanel) {
+    actionPanel.destroy()
+    actionPanel = null
+  }
+  
+  if (encounterBuilder) {
+    encounterBuilder.destroy()
+    encounterBuilder = null
+  }
+  
+  if (reconnectOverlay) {
+    reconnectOverlay.destroy()
+    reconnectOverlay = null
+  }
+  
   if (unsubscribeRouteChange) {
     unsubscribeRouteChange()
     unsubscribeRouteChange = null
   }
   
   window.removeEventListener('beforeunload', disconnectChat)
+}
+
+// ========================================
+// Combat Tracker Functions
+// ========================================
+
+/**
+ * Check if there's an active encounter and initialize the combat tracker
+ */
+async function checkActiveEncounter(gameId) {
+  try {
+    const response = await fetchWithAuth(`/api/v1/game/${gameId}/encounters?status=ACTIVE`)
+    
+    if (!response.ok) {
+      // No active encounters or endpoint not available
+      return
+    }
+    
+    const encounters = await response.json()
+    
+    if (encounters && encounters.length > 0) {
+      const activeEncounter = encounters[0]
+      initCombatTracker(activeEncounter.id)
+    }
+  } catch (error) {
+    console.log('[Game] No active encounters or error checking:', error.message)
+  }
+}
+
+/**
+ * Initialize the combat tracker for an active encounter
+ */
+function initCombatTracker(encounterId) {
+  if (combatTracker) {
+    combatTracker.destroy()
+  }
+  
+  if (!gameChat?.socketClient) {
+    console.warn('[Game] Cannot init combat tracker: no socket client')
+    return
+  }
+  
+  combatTracker = new CombatTracker({
+    encounterId: encounterId,
+    socketClient: gameChat.socketClient,
+    gameId: currentGame.id,
+    currentUserRole: currentUserRole,
+    currentCharacterId: currentCharacter?.id || null,
+    onTurnChange: (combatant, isMyTurn) => {
+      if (isMyTurn) {
+        showMessage('It\'s your turn!', 'info')
+      }
+    },
+    onEncounterEnd: (data) => {
+      showMessage(`Encounter ended: ${data.outcome}`, 'success')
+      stopCombatTracking()
+    }
+  })
+  
+  combatTracker.init()
+  
+  // Initialize combat log alongside tracker
+  initCombatLog(encounterId)
+  
+  // Initialize action panel for players
+  initActionPanel(encounterId)
+  
+  // Update reconnect overlay with active encounter
+  if (reconnectOverlay) {
+    reconnectOverlay.setActiveEncounterId(encounterId)
+  }
+}
+
+/**
+ * Initialize the combat log for an active encounter
+ */
+function initCombatLog(encounterId) {
+  if (combatLog) {
+    combatLog.destroy()
+  }
+  
+  if (!gameChat?.socketClient) {
+    console.warn('[Game] Cannot init combat log: no socket client')
+    return
+  }
+  
+  combatLog = new CombatLog({
+    encounterId: encounterId,
+    gameId: currentGame.id,
+    socketClient: gameChat.socketClient,
+    onError: (message) => showMessage(message, 'error')
+  })
+  
+  combatLog.init()
+  
+  // Show the combat log container
+  const combatLogContainer = document.getElementById('combat-log-container')
+  if (combatLogContainer) {
+    combatLogContainer.hidden = false
+  }
+}
+
+/**
+ * Initialize the action panel for player combat actions
+ */
+function initActionPanel(encounterId) {
+  // Only initialize for players, not DMs
+  if (currentUserRole === 'DM') {
+    return
+  }
+  
+  if (actionPanel) {
+    actionPanel.destroy()
+  }
+  
+  if (!gameChat?.socketClient) {
+    console.warn('[Game] Cannot init action panel: no socket client')
+    return
+  }
+  
+  if (!currentCharacter) {
+    console.warn('[Game] Cannot init action panel: no character')
+    return
+  }
+  
+  actionPanel = new ActionPanel({
+    encounterId: encounterId,
+    characterId: currentCharacter.id,
+    socketClient: gameChat.socketClient,
+    gameId: currentGame.id,
+    characterData: currentCharacter.data || {},
+    onActionSubmitted: (actionData) => {
+      console.log('[Game] Action submitted:', actionData)
+    },
+    onTargetHighlight: (combatantKey, shouldHighlight) => {
+      // Highlight targets in combat tracker
+      if (combatTracker && combatTracker.highlightCombatant) {
+        combatTracker.highlightCombatant(combatantKey, shouldHighlight)
+      }
+    },
+    getCombatants: () => {
+      // Return current combatants from combat tracker
+      if (combatTracker && combatTracker.initiativeOrder) {
+        return combatTracker.initiativeOrder.map((c) => ({
+          ...c,
+          state: combatTracker.combatantsState?.[c.key] || {}
+        }))
+      }
+      return []
+    }
+  })
+  
+  actionPanel.init()
+}
+
+/**
+ * Initialize the reconnect overlay for connection loss handling
+ */
+function initReconnectOverlay() {
+  if (reconnectOverlay) {
+    reconnectOverlay.destroy()
+  }
+  
+  if (!gameChat?.socketClient) {
+    console.warn('[Game] Cannot init reconnect overlay: no socket client')
+    return
+  }
+  
+  reconnectOverlay = new ReconnectOverlay({
+    socketClient: gameChat.socketClient,
+    onReconnected: () => {
+      showMessage('Connection restored!', 'success')
+    },
+    onReturnToDashboard: () => {
+      navigate('/dashboard')
+    },
+    activeEncounterId: null
+  })
+  
+  reconnectOverlay.init()
+}
+
+/**
+ * Public function to start tracking an encounter (called from other components)
+ */
+function startCombatTracking(encounterId) {
+  initCombatTracker(encounterId)
+}
+
+/**
+ * Public function to stop tracking combat
+ */
+function stopCombatTracking() {
+  if (combatTracker) {
+    combatTracker.destroy()
+    combatTracker = null
+  }
+  
+  if (combatLog) {
+    combatLog.destroy()
+    combatLog = null
+  }
+  
+  if (actionPanel) {
+    actionPanel.destroy()
+    actionPanel = null
+  }
+  
+  // Hide the combat log container
+  const combatLogContainer = document.getElementById('combat-log-container')
+  if (combatLogContainer) {
+    combatLogContainer.hidden = true
+  }
+  
+  // Clear active encounter from reconnect overlay
+  if (reconnectOverlay) {
+    reconnectOverlay.setActiveEncounterId(null)
+  }
+}
+
+// ========================================
+// Encounter Builder Functions
+// ========================================
+
+/**
+ * Open the encounter builder modal (DM only)
+ */
+function openEncounterBuilder(encounterId = null) {
+  if (currentUserRole !== 'DM') {
+    showMessage('Only the DM can create encounters', 'error')
+    return
+  }
+  
+  if (encounterBuilder) {
+    encounterBuilder.destroy()
+  }
+  
+  encounterBuilder = new EncounterBuilder({
+    gameId: currentGame.id,
+    encounterId: encounterId,
+    onSave: (encounter) => {
+      showMessage('Encounter saved successfully!', 'success')
+      encounterBuilder = null
+    },
+    onActivate: async (encounterId) => {
+      await activateEncounter(encounterId)
+    },
+    onCancel: () => {
+      encounterBuilder = null
+    }
+  })
+  
+  encounterBuilder.init()
+}
+
+/**
+ * Activate an encounter and start combat
+ */
+async function activateEncounter(encounterId) {
+  try {
+    const response = await fetchWithAuth(
+      `/api/v1/game/${currentGame.id}/encounter/${encounterId}/activate`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      }
+    )
+    
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Failed to activate encounter')
+    }
+    
+    showMessage('Encounter activated! Rolling initiative...', 'success')
+    
+    // Initialize combat tracking for the active encounter
+    initCombatTracker(encounterId)
+  } catch (error) {
+    showMessage(error.message, 'error')
+  }
+}
+
+/**
+ * Expose functions for external use (e.g., from NPC Manager)
+ */
+window.gamePageActions = {
+  openEncounterBuilder,
+  startCombatTracking,
+  stopCombatTracking
 }
 
 function disconnectChat() {

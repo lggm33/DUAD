@@ -422,6 +422,161 @@ def get_encounter_logs(game_id: int, encounter_id: int):
         return error_response("VALIDATION_ERROR", str(e), status_code=400)
 
 
+@encounter_bp.post("/<int:game_id>/encounter/<int:encounter_id>/participants")
+@auth_required
+def add_participant(game_id: int, encounter_id: int):
+    """
+    Add a participant (Character or NPC) to an encounter.
+
+    Only the DM can add participants.
+    Cannot add to an active encounter.
+
+    Request body:
+    {
+        "participant_type": "CHARACTER" | "NPC",
+        "participant_id": 123,
+        "quantity": 1,  // Only for NPCs, creates multiple instances
+        "notes": "Optional notes"
+    }
+
+    Returns 201 with the created participant(s).
+    """
+    data = request.get_json()
+
+    if not data:
+        return error_response(
+            "VALIDATION_ERROR",
+            "Request body is required",
+            status_code=400,
+        )
+
+    participant_type_str = data.get("participant_type")
+    participant_id = data.get("participant_id")
+    quantity = data.get("quantity", 1)
+    notes = data.get("notes")
+
+    if not participant_type_str:
+        return error_response(
+            "VALIDATION_ERROR",
+            "participant_type is required",
+            status_code=400,
+        )
+
+    if not participant_id or not isinstance(participant_id, int):
+        return error_response(
+            "VALIDATION_ERROR",
+            "participant_id is required and must be an integer",
+            status_code=400,
+        )
+
+    participant_type_str = participant_type_str.upper()
+    if participant_type_str not in ("CHARACTER", "NPC"):
+        return error_response(
+            "VALIDATION_ERROR",
+            "participant_type must be CHARACTER or NPC",
+            status_code=400,
+        )
+
+    if not isinstance(quantity, int) or quantity < 1 or quantity > 20:
+        return error_response(
+            "VALIDATION_ERROR",
+            "quantity must be an integer between 1 and 20",
+            status_code=400,
+        )
+
+    encounter_service = get_encounter_service()
+
+    try:
+        # Verify encounter belongs to this game
+        encounter = encounter_service.get_encounter(encounter_id, g.auth_user.user_id)
+        if not encounter or encounter.game_id != game_id:
+            return error_response(
+                "ENCOUNTER_NOT_FOUND",
+                "Encounter not found in this game",
+                status_code=404,
+            )
+
+        if participant_type_str == "CHARACTER":
+            participant = encounter_service.add_character_to_encounter(
+                encounter_id=encounter_id,
+                character_id=participant_id,
+                dm_user_id=g.auth_user.user_id,
+                notes=notes,
+            )
+            db.get_session().commit()
+            return jsonify(EncounterPresenter.participant(participant)), 201
+        else:
+            participants = encounter_service.add_npc_to_encounter(
+                encounter_id=encounter_id,
+                npc_id=participant_id,
+                dm_user_id=g.auth_user.user_id,
+                quantity=quantity,
+                notes=notes,
+            )
+            db.get_session().commit()
+            return jsonify([EncounterPresenter.participant(p) for p in participants]), 201
+
+    except ValueError as e:
+        error_msg = str(e).lower()
+        if "not found" in error_msg:
+            return error_response("NOT_FOUND", str(e), status_code=404)
+        if "only the dm" in error_msg:
+            return error_response("FORBIDDEN", str(e), status_code=403)
+        if "cannot add" in error_msg:
+            return error_response("CONFLICT", str(e), status_code=409)
+        return error_response("VALIDATION_ERROR", str(e), status_code=400)
+
+
+@encounter_bp.delete("/<int:game_id>/encounter/<int:encounter_id>/participants/<int:participant_id>")
+@auth_required
+def remove_participant(game_id: int, encounter_id: int, participant_id: int):
+    """
+    Remove a participant from an encounter.
+
+    Only the DM can remove participants.
+    Cannot remove from an active encounter.
+
+    Returns 204 No Content on success.
+    """
+    encounter_service = get_encounter_service()
+
+    try:
+        # Verify encounter belongs to this game
+        encounter = encounter_service.get_encounter(encounter_id, g.auth_user.user_id)
+        if not encounter or encounter.game_id != game_id:
+            return error_response(
+                "ENCOUNTER_NOT_FOUND",
+                "Encounter not found in this game",
+                status_code=404,
+            )
+
+        # Verify DM
+        if not _is_dm(game_id, g.auth_user.user_id):
+            return error_response("FORBIDDEN", "Only the DM can remove participants", status_code=403)
+
+        if encounter.status == EncounterStatus.ACTIVE:
+            return error_response("CONFLICT", "Cannot remove participants from an active encounter", status_code=409)
+
+        session = db.get_session()
+        from app.domain.encounters.encounter_repository import EncounterRepository
+        repo = EncounterRepository(session)
+
+        deleted = repo.remove_participant_by_id(participant_id)
+        if not deleted:
+            return error_response("NOT_FOUND", "Participant not found", status_code=404)
+
+        session.commit()
+        return "", 204
+
+    except ValueError as e:
+        error_msg = str(e).lower()
+        if "not found" in error_msg:
+            return error_response("NOT_FOUND", str(e), status_code=404)
+        if "only the dm" in error_msg:
+            return error_response("FORBIDDEN", str(e), status_code=403)
+        return error_response("VALIDATION_ERROR", str(e), status_code=400)
+
+
 @encounter_bp.get("/<int:game_id>/encounter/<int:encounter_id>/state")
 @auth_required
 def get_encounter_state(game_id: int, encounter_id: int):
