@@ -6,6 +6,7 @@ from typing import Any, Optional, TypedDict
 from pydantic import BaseModel
 
 from app.domain.games.models import (
+    CharacterCreationMode,
     Game,
     GameInvite,
     GameRoleInGame,
@@ -132,6 +133,20 @@ class GameService:
         
         # For other templates, use the template's base_rules directly
 
+        # Determine character creation mode from rules
+        character_creation_mode = CharacterCreationMode.OPEN  # Default
+        
+        # Check custom_rules first (takes priority)
+        if custom_rules:
+            creation_mode_str = custom_rules.get("character", {}).get("creation_mode", "")
+            if creation_mode_str == "dm_approval":
+                character_creation_mode = CharacterCreationMode.DM_APPROVAL
+        elif template and template.base_rules:
+            # Otherwise check template base_rules
+            creation_mode_str = template.base_rules.get("character", {}).get("creation_mode", "")
+            if creation_mode_str == "dm_approval":
+                character_creation_mode = CharacterCreationMode.DM_APPROVAL
+
         # Create game with ruleset configuration
         game = Game(
             name=name,
@@ -139,6 +154,7 @@ class GameService:
             status=GameStatus.ACTIVE,
             ruleset_template_id=final_template_id,
             custom_rules=None,
+            character_creation_mode=character_creation_mode,
         )
         new_game = self._game_repository.create_game(game)
 

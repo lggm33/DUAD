@@ -65,6 +65,7 @@ export class CharacterCreator {
   /**
    * @param {Object} options - Configuration options
    * @param {number} options.gameId - The ID of the game
+   * @param {number} options.characterId - The ID of the character (for editing)
    * @param {Object} options.rules - The game's ruleset configuration
    * @param {Function} options.onSubmit - Callback when character is submitted
    * @param {Function} options.onCancel - Callback when creation is cancelled
@@ -72,6 +73,7 @@ export class CharacterCreator {
    */
   constructor(options) {
     this.gameId = options.gameId
+    this.characterId = options.characterId || null
     this.rules = options.rules || {}
     this.onSubmit = options.onSubmit
     this.onCancel = options.onCancel
@@ -95,6 +97,7 @@ export class CharacterCreator {
     this.maxSkills = this.rules.skill_count || DEFAULT_SKILL_COUNT
     this.errors = []
     this.isSubmitting = false
+    this.isEditMode = !!this.characterId
   }
 
   /**
@@ -800,8 +803,18 @@ export class CharacterCreator {
 
     try {
       const payload = this.buildPayload(false)
-      const response = await fetchWithAuth(`/api/v1/game/${this.gameId}/character`, {
-        method: 'POST',
+      
+      let url, method
+      if (this.isEditMode) {
+        url = `/api/v1/game/${this.gameId}/character/${this.characterId}`
+        method = 'PUT'
+      } else {
+        url = `/api/v1/game/${this.gameId}/character`
+        method = 'POST'
+      }
+
+      const response = await fetchWithAuth(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
@@ -848,15 +861,25 @@ export class CharacterCreator {
 
     try {
       const payload = this.buildPayload(true)
-      const response = await fetchWithAuth(`/api/v1/game/${this.gameId}/character`, {
-        method: 'POST',
+      
+      let url, method
+      if (this.isEditMode) {
+        url = `/api/v1/game/${this.gameId}/character/${this.characterId}`
+        method = 'PUT'
+      } else {
+        url = `/api/v1/game/${this.gameId}/character`
+        method = 'POST'
+      }
+
+      const response = await fetchWithAuth(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.message || 'Failed to create character')
+        throw new Error(error.message || 'Failed to save character')
       }
 
       const character = await response.json()

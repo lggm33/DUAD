@@ -117,6 +117,7 @@ class CharacterService:
         user_id: int,
         name: Optional[str] = None,
         data: Optional[dict[str, Any]] = None,
+        submit_for_approval: bool = False,
     ) -> Character:
         """
         Update a character's data.
@@ -129,6 +130,7 @@ class CharacterService:
             user_id: The user attempting to update
             name: New name (optional)
             data: New data (optional)
+            submit_for_approval: If True, submit for DM approval after update
 
         Returns:
             The updated character
@@ -157,7 +159,18 @@ class CharacterService:
         # Clear any previous rejection feedback when player updates
         if character.status == CharacterStatus.REJECTED:
             character.dm_feedback = None
-            character.status = CharacterStatus.DRAFT
+
+        # Handle submit for approval
+        if submit_for_approval:
+            game = self._game_repo.get_game_by_id(character.game_id)
+            if game and game.requires_character_approval():
+                character.status = CharacterStatus.PENDING_APPROVAL
+            else:
+                character.status = CharacterStatus.APPROVED
+        else:
+            # If not submitting, keep as draft
+            if character.status == CharacterStatus.REJECTED:
+                character.status = CharacterStatus.DRAFT
 
         return character
 

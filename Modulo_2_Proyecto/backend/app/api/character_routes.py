@@ -9,9 +9,12 @@ from app.presentation.common.errors import error_response
 from app.presentation.characters.presenters import CharacterPresenter
 from app.domain.characters.character_service import CharacterService
 from app.domain.characters.character_repository import CharacterRepository
+from app.domain.characters.models import CharacterStatus
 from app.domain.games.game_repository import GameRepository
 from app.domain.games.game_membership_repository import GameMembershipRepository
+from app.domain.users.user_repository import UserRepository
 from app.extensions import db
+from app.realtime.character_events import CharacterEventEmitter
 
 
 character_bp = Blueprint("character", __name__, url_prefix="/api/v1/game")
@@ -75,6 +78,21 @@ def create_character(game_id: int):
             submit_for_approval=submit_for_approval,
         )
         db.get_session().commit()
+
+        if character.status == CharacterStatus.PENDING_APPROVAL:
+            session = db.get_session()
+            user_repo = UserRepository(session)
+            user = user_repo.get_by_id(g.auth_user.user_id)
+            player_name = user.username if user else "Unknown"
+
+            CharacterEventEmitter.emit_character_submitted(
+                game_id=game_id,
+                character_id=character.id,
+                character_name=character.name,
+                player_name=player_name,
+                user_id=g.auth_user.user_id,
+            )
+
         return jsonify(CharacterPresenter.public(character)), 201
     except ValueError as e:
         error_msg = str(e).lower()
@@ -161,7 +179,8 @@ def update_character(game_id: int, character_id: int):
     Request body:
     {
         "name": "New Name",  // optional
-        "data": { ... }      // optional
+        "data": { ... },     // optional
+        "submit_for_approval": true/false  // optional
     }
 
     Returns the updated character.
@@ -177,6 +196,7 @@ def update_character(game_id: int, character_id: int):
 
     name = data.get("name")
     character_data = data.get("data")
+    submit_for_approval = data.get("submit_for_approval", False)
 
     if name is not None and (not name or not name.strip()):
         return error_response(
@@ -202,8 +222,24 @@ def update_character(game_id: int, character_id: int):
             user_id=g.auth_user.user_id,
             name=name.strip() if name else None,
             data=character_data,
+            submit_for_approval=submit_for_approval,
         )
         db.get_session().commit()
+
+        # Emit event if submitted for approval
+        if submit_for_approval and updated_character.status == CharacterStatus.PENDING_APPROVAL:
+            session = db.get_session()
+            user_repo = UserRepository(session)
+            user = user_repo.get_by_id(g.auth_user.user_id)
+            player_name = user.username if user else "Unknown"
+
+            CharacterEventEmitter.emit_character_submitted(
+                game_id=game_id,
+                character_id=updated_character.id,
+                character_name=updated_character.name,
+                player_name=player_name,
+                user_id=g.auth_user.user_id,
+            )
         return jsonify(CharacterPresenter.public(updated_character)), 200
     except ValueError as e:
         error_msg = str(e).lower()
@@ -251,6 +287,15 @@ def approve_character(game_id: int, character_id: int):
             feedback=feedback,
         )
         db.get_session().commit()
+
+        CharacterEventEmitter.emit_character_approved(
+            game_id=game_id,
+            character_id=character_id,
+            character_name=approved_character.name,
+            user_id=approved_character.user_id,
+            feedback=feedback,
+        )
+
         return jsonify(CharacterPresenter.public(approved_character)), 200
     except ValueError as e:
         error_msg = str(e).lower()
@@ -307,6 +352,15 @@ def reject_character(game_id: int, character_id: int):
             feedback=feedback,
         )
         db.get_session().commit()
+
+        CharacterEventEmitter.emit_character_rejected(
+            game_id=game_id,
+            character_id=character_id,
+            character_name=rejected_character.name,
+            user_id=rejected_character.user_id,
+            feedback=feedback,
+        )
+
         return jsonify(CharacterPresenter.public(rejected_character)), 200
     except ValueError as e:
         error_msg = str(e).lower()
