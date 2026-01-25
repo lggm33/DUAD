@@ -47,14 +47,6 @@ class NPCRepository:
             .all()
         )
 
-    def get_converted_from_character(self, character_id: int) -> Optional[NPC]:
-        """Get NPC that was converted from a specific character."""
-        return (
-            self._session.query(NPC)
-            .filter_by(converted_from_character_id=character_id)
-            .first()
-        )
-
     def delete(self, npc: NPC) -> None:
         """Delete an NPC."""
         self._session.delete(npc)

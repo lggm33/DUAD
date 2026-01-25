@@ -30,7 +30,6 @@ class CharacterStatus(str, Enum):
     PENDING_APPROVAL = "PENDING_APPROVAL"  # Submitted for DM review
     APPROVED = "APPROVED"  # Approved by DM, ready to play
     REJECTED = "REJECTED"  # Rejected by DM, needs changes
-    CONVERTED_TO_NPC = "CONVERTED_TO_NPC"  # Player left, character is now NPC
 
 
 class Character(Base, IntPrimaryKeyMixin, TimestampMixin):
@@ -67,11 +66,6 @@ class Character(Base, IntPrimaryKeyMixin, TimestampMixin):
         default=dict,
     )
     dm_feedback: Mapped[str | None] = mapped_column(Text, nullable=True)
-    converted_to_npc_id: Mapped[int | None] = mapped_column(
-        Integer,
-        ForeignKey("npcs.id", ondelete="SET NULL"),
-        nullable=True,
-    )
 
     # Relationships
     game: Mapped["Game"] = relationship("Game", back_populates="characters")

@@ -2,7 +2,7 @@
  * NPCManager Component
  * 
  * Panel exclusive for DM with complete CRUD operations for NPCs.
- * Allows creating, editing, deleting NPCs and converting them to player characters.
+ * Allows creating, editing, and deleting NPCs.
  */
 
 import { fetchWithAuth, escapeHtml, getInitials } from '../utils/index.js'
@@ -22,8 +22,7 @@ const NPC_TYPES = {
 const NPC_STATUSES = {
   ACTIVE: { label: 'Active', class: 'npc-status-active' },
   DEFEATED: { label: 'Defeated', class: 'npc-status-defeated' },
-  RETIRED: { label: 'Retired', class: 'npc-status-retired' },
-  CONVERTED_TO_PC: { label: 'Converted to PC', class: 'npc-status-converted' }
+  RETIRED: { label: 'Retired', class: 'npc-status-retired' }
 }
 
 export class NPCManager {
@@ -392,14 +391,6 @@ export class NPCManager {
               </svg>
               Give Turn
             </button>
-            <button class="btn btn-ghost btn-xs npc-convert-btn" data-npc-id="${npc.id}">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="8.5" cy="7" r="4"></circle>
-                <polyline points="17 11 19 13 23 9"></polyline>
-              </svg>
-              Convert to PC
-            </button>
           </div>
         ` : ''}
       </div>
@@ -445,14 +436,6 @@ export class NPCManager {
         e.stopPropagation()
         const npcId = parseInt(btn.dataset.npcId)
         this.confirmDeleteNPC(npcId)
-      })
-    })
-
-    document.querySelectorAll('.npc-convert-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation()
-        const npcId = parseInt(btn.dataset.npcId)
-        this.openConvertToPC(npcId)
       })
     })
 
@@ -798,49 +781,6 @@ export class NPCManager {
 
       this.onSuccess('NPC deleted successfully!')
       if (this.onNPCDeleted) this.onNPCDeleted(npcId)
-      await this.loadNPCs()
-    } catch (error) {
-      this.onError(error.message)
-    }
-  }
-
-  /**
-   * Open convert to PC dialog
-   */
-  async openConvertToPC(npcId) {
-    const npc = this.npcs.find(n => n.id === npcId)
-    if (!npc) return
-
-    // For now, just show an alert - in the future this could be a modal
-    // that lets the DM select which player will receive the character
-    const userId = window.prompt(
-      `Convert "${npc.name}" to a player character.\n\nEnter the User ID of the player who will control this character:`
-    )
-
-    if (!userId) return
-
-    const userIdNum = parseInt(userId)
-    if (isNaN(userIdNum)) {
-      this.onError('Invalid user ID')
-      return
-    }
-
-    try {
-      const response = await fetchWithAuth(
-        `/api/v1/game/${this.gameId}/npc/${npcId}/convert-to-character`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userIdNum })
-        }
-      )
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to convert NPC')
-      }
-
-      this.onSuccess(`${npc.name} has been converted to a player character!`)
       await this.loadNPCs()
     } catch (error) {
       this.onError(error.message)

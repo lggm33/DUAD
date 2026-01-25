@@ -357,11 +357,6 @@
   color: var(--color-text-muted);
 }
 
-.npc-status-badge.npc-status-converted {
-  background: rgba(34, 211, 238, 0.2);
-  color: var(--color-cyan);
-}
-
 .npc-card-actions {
   display: flex;
   gap: var(--space-xs);

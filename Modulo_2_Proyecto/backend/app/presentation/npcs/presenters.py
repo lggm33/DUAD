@@ -29,7 +29,6 @@ class NPCPresenter(Presenter):
             "description": npc.description,
             "stats": npc.stats,
             "data": npc.data,
-            "converted_from_character_id": npc.converted_from_character_id,
             "created_at": npc.created_at.isoformat() if npc.created_at else None,
             "updated_at": npc.updated_at.isoformat() if npc.updated_at else None,
         }

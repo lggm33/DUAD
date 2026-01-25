@@ -25,8 +25,7 @@ const STATUS_LABELS = {
   DRAFT: { label: 'Draft', class: 'cs-status-draft' },
   PENDING_APPROVAL: { label: 'Pending Approval', class: 'cs-status-pending' },
   APPROVED: { label: 'Approved', class: 'cs-status-approved' },
-  REJECTED: { label: 'Rejected', class: 'cs-status-rejected' },
-  CONVERTED_TO_NPC: { label: 'Converted to NPC', class: 'cs-status-converted' }
+  REJECTED: { label: 'Rejected', class: 'cs-status-rejected' }
 }
 
 export class CharacterSheet {

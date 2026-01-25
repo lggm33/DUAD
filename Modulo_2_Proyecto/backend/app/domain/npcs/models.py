@@ -3,8 +3,6 @@ NPC (Non-Player Character) model.
 
 NPCs are characters controlled by the DM. They can be:
 - Created from scratch by the DM
-- Converted from a player character (when player leaves)
-- Converted back to a player character (when adopted by new player)
 """
 
 from __future__ import annotations
@@ -41,7 +39,6 @@ class NPCStatus(str, Enum):
     ACTIVE = "ACTIVE"  # Available for encounters
     DEFEATED = "DEFEATED"  # Defeated in combat
     RETIRED = "RETIRED"  # No longer in game
-    CONVERTED_TO_PC = "CONVERTED_TO_PC"  # Became a player character
 
 
 class NPC(Base, IntPrimaryKeyMixin, TimestampMixin):
@@ -87,21 +84,10 @@ class NPC(Base, IntPrimaryKeyMixin, TimestampMixin):
         default=dict,
     )
 
-    # Tracking conversion origin
-    converted_from_character_id: Mapped[int | None] = mapped_column(
-        Integer,
-        ForeignKey("characters.id", ondelete="SET NULL"),
-        nullable=True,
-    )
-
     # Relationships
     game: Mapped["Game"] = relationship(
         "Game",
         back_populates="npcs",
         foreign_keys=[game_id]
-    )
-    converted_from_character: Mapped["Character | None"] = relationship(
-        "Character",
-        foreign_keys=[converted_from_character_id],
     )
 

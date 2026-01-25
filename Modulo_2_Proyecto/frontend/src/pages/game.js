@@ -895,8 +895,7 @@ function getCharacterStatusClass(status) {
     'DRAFT': 'status-draft',
     'PENDING_APPROVAL': 'status-pending',
     'APPROVED': 'status-approved',
-    'REJECTED': 'status-rejected',
-    'CONVERTED_TO_NPC': 'status-converted'
+    'REJECTED': 'status-rejected'
   }
   return classes[status] || 'status-draft'
 }
@@ -906,8 +905,7 @@ function formatCharacterStatus(status) {
     'DRAFT': 'Draft',
     'PENDING_APPROVAL': 'Pending Approval',
     'APPROVED': 'Approved',
-    'REJECTED': 'Rejected',
-    'CONVERTED_TO_NPC': 'Converted to NPC'
+    'REJECTED': 'Rejected'
   }
   return labels[status] || status
 }
