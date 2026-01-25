@@ -96,15 +96,14 @@ def _normalize_database_url(raw_url: str) -> str:
 
 
 # Import models so they are registered in SQLAlchemy's metadata.
-from app.domain.common.models import Base  
-import app.domain.users.models  
-import app.domain.auth.models  
-import app.domain.games.models  
-import app.domain.games.ruleset_models  
-import app.domain.chat.models  
-import app.domain.characters.models  
+from app.domain.common.models import Base
+import app.domain.users.models
+import app.domain.auth.models
+import app.domain.games.models
+import app.domain.games.ruleset_models
+import app.domain.chat.models
+import app.domain.characters.models
 import app.domain.npcs.models  
-import app.domain.encounters.models  
 
 target_metadata = Base.metadata
 

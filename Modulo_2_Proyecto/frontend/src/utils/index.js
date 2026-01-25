@@ -1,4 +1,7 @@
 import { getAccessToken } from '../infrastructure/auth/auth.js'
+import { DiceService } from './dice-service.js'
+
+export { DiceService }
 
 /**
  * Makes an HTTP request with authentication token

@@ -52,7 +52,6 @@ def register_connection_events(socketio, app, shared_state, helpers):
                     "username": user.username,
                     "name": user.name,
                     "game_id": None,
-                    "active_encounter_id": None,
                     "character_id": None,
                 }
 
@@ -69,21 +68,6 @@ def register_connection_events(socketio, app, shared_state, helpers):
         user = authenticated_users.pop(request.sid, None)
         if user:
             logger.info(f"[SocketIO] User {user['username']} disconnected")
-
-            if user.get("active_encounter_id") and user.get("game_id"):
-                try:
-                    with app.app_context():
-                        emit(
-                            "player_disconnected_combat",
-                            {
-                                "encounter_id": user["active_encounter_id"],
-                                "combatant_key": f"CHARACTER_{user.get('character_id')}",
-                                "player_name": user.get("name") or user.get("username"),
-                            },
-                            room=f"game_{user['game_id']}",
-                        )
-                except Exception as e:
-                    logger.error(f"[SocketIO] Error handling combat disconnect: {e}")
 
             if user.get("game_id"):
                 try:

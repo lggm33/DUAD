@@ -16,7 +16,6 @@ from app.domain.chat.chat_service import ChatService
 from app.realtime.connection_events import register_connection_events
 from app.realtime.game_room_events import register_game_room_events
 from app.realtime.chat_events import register_chat_events
-from app.realtime.combat_events import register_combat_events
 from app.realtime.character_events import register_character_events
 
 logger = logging.getLogger(__name__)
@@ -62,7 +61,6 @@ def register_socketio_events(socketio, app):
     register_connection_events(socketio, app, shared_state, helpers)
     register_game_room_events(socketio, app, shared_state, helpers)
     register_chat_events(socketio, app, shared_state, helpers)
-    register_combat_events(socketio, app, shared_state, helpers)
     register_character_events(socketio, app, shared_state, helpers)
 
     logger.info("[SocketIO] All event handlers registered")

@@ -8,12 +8,8 @@
 @import './components/footer.css';
 @import './components/game-chat.css';
 @import './components/character-creator.css';
-@import './components/encounter-builder.css';
 @import './components/character-sheet.css';
 @import './components/npc-manager.css';
-@import './components/combat-log.css';
-@import './components/combat-tracker.css';
-@import './components/action-panel.css';
 @import './components/reconnect-overlay.css';
 @import './components/game-creator.css';
 
@@ -23,6 +19,7 @@
 @import './pages/dashboard.css';
 @import './pages/game.css';
 @import './pages/join.css';
+@import './pages/history.css';
 
 /* Layout */
 @import './layout/responsive.css';

@@ -14,6 +14,8 @@ class ChatMessageData(TypedDict):
     user_id: Optional[int]
     username: Optional[str]
     name: Optional[str]
+    character_name: Optional[str]
+    is_dm: bool
     content: str
     message_type: str
     created_at: str
@@ -25,7 +27,7 @@ class ChatService:
     def __init__(self, chat_repository: ChatRepository) -> None:
         self._chat_repository = chat_repository
 
-    def send_message(self, game_id: int, user_id: int, content: str) -> ChatMessage:
+    def send_message(self, game_id: int, user_id: int, content: str, character_name: Optional[str] = None, message_type: str = "user") -> ChatMessage:
         """
         Send a new user chat message.
         Persists the message and returns it.
@@ -37,6 +39,8 @@ class ChatService:
             game_id=game_id,
             user_id=user_id,
             content=content.strip(),
+            character_name=character_name,
+            message_type=message_type,
         )
         return message
 
@@ -67,6 +71,9 @@ class ChatService:
         Handles both user messages and system messages (where user is None).
         """
         is_system = message.message_type == MessageType.SYSTEM.value
+        is_dm = False
+        if message.user_id and message.game:
+            is_dm = message.user_id == message.game.dm_user_id
 
         return ChatMessageData(
             id=message.id,
@@ -74,6 +81,8 @@ class ChatService:
             user_id=message.user_id,
             username=None if is_system else message.user.username,
             name="System" if is_system else message.user.name,
+            character_name=message.character_name,
+            is_dm=is_dm,
             content=message.content,
             message_type=message.message_type,
             created_at=message.created_at.isoformat(),

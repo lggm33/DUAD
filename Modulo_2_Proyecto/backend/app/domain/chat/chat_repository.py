@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.domain.chat.models import ChatMessage, MessageType
@@ -11,7 +12,7 @@ class ChatRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def create(self, game_id: int, user_id: int, content: str) -> ChatMessage:
+    def create(self, game_id: int, user_id: int, content: str, character_name: Optional[str] = None, message_type: str = MessageType.USER.value) -> ChatMessage:
         """
         Create a new user chat message.
         """
@@ -19,10 +20,12 @@ class ChatRepository:
             game_id=game_id,
             user_id=user_id,
             content=content,
-            message_type=MessageType.USER.value,
+            message_type=message_type,
+            character_name=character_name,
         )
         self._session.add(message)
         self._session.flush()
+        self._session.refresh(message)
         return message
 
     def create_system_message(self, game_id: int, content: str) -> ChatMessage:
@@ -37,6 +40,7 @@ class ChatRepository:
         )
         self._session.add(message)
         self._session.flush()
+        self._session.refresh(message)
         return message
 
     def get_by_game(self, game_id: int, limit: int = 50) -> list[ChatMessage]:

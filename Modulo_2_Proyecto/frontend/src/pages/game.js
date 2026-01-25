@@ -5,12 +5,7 @@ import {
   GameChat,
   CharacterCreator,
   CharacterSheet,
-  NPCManager,
-  CombatTracker,
-  CombatLog,
-  EncounterBuilder,
-  ReconnectOverlay,
-  ActionPanel
+  NPCManager
 } from '../components/index.js'
 import { navigate, getRouteParams, onBeforeRouteChange } from '../router.js'
 import { getUserFromToken } from '../infrastructure/auth/auth.js'
@@ -25,11 +20,7 @@ let characterCreator = null
 let characterSheet = null
 let currentCharacter = null
 let npcManager = null
-let combatTracker = null
-let combatLog = null
-let encounterBuilder = null
-let reconnectOverlay = null
-let actionPanel = null
+let currentTurn = null // { user_id, character_name, set_by }
 
 export function gamePage(app) {
   app.innerHTML = template + Footer()
@@ -72,13 +63,13 @@ async function loadGame(gameId) {
     await loadPlayers(gameId)
     await loadUserCharacter(gameId)
     
+    // Set up history link
+    const historyLink = document.getElementById('view-history-link')
+    if (historyLink) {
+      historyLink.href = `/game/${gameId}/history`
+    }
+    
     initChatComponent(gameId)
-    
-    // Initialize reconnect overlay for connection loss handling
-    initReconnectOverlay()
-    
-    // Check for active encounter and initialize combat tracker
-    await checkActiveEncounter(gameId)
 
   } catch (error) {
     loadingEl.hidden = true
@@ -89,15 +80,25 @@ async function loadGame(gameId) {
 function initChatComponent(gameId) {
   gameChat = new GameChat({
     gameId,
-    onError: (message) => showMessage(message, 'error')
+    onError: (message) => showMessage(message, 'error'),
+    onConnected: () => {
+      // Register character event listeners when socket is connected
+      registerCharacterEventListeners()
+      // Register turn management listeners
+      registerTurnEventListeners()
+    }
   })
-  
+
   gameChat.init()
   
-  // Register character event listeners after a short delay to ensure socket is ready
+  // Also register turn listeners immediately after init (in case already connected)
+  // Use a small delay to ensure socket client is set up
   setTimeout(() => {
-    registerCharacterEventListeners()
-  }, 500)
+    if (gameChat?.socketClient && !gameChat.socketClient.eventHandlers.has('turn_update')) {
+      console.log('[Game] Registering turn listeners (delayed fallback)')
+      registerTurnEventListeners()
+    }
+  }, 1000)
 }
 
 function registerCharacterEventListeners() {
@@ -110,8 +111,9 @@ function registerCharacterEventListeners() {
 
   // Listen for new character submissions (DM only)
   socket.on('character:submitted', (data) => {
-    console.log('[Game] Character submitted:', data)
+    console.log('[Game] Character submitted event received:', data)
     if (currentUserRole === 'DM') {
+      console.log('[Game] User is DM, showing submission message')
       showMessage(`New character "${data.character_name}" submitted by ${data.player_name}`, 'info')
       addPendingCharacter({
         id: data.character_id,
@@ -120,6 +122,8 @@ function registerCharacterEventListeners() {
         game_id: data.game_id,
         data: {}
       })
+    } else {
+      console.log('[Game] User is not DM, ignoring submission event')
     }
   })
 
@@ -129,11 +133,12 @@ function registerCharacterEventListeners() {
     console.log('[Game] currentUser:', currentUser)
     console.log('[Game] currentCharacter:', currentCharacter)
     console.log('[Game] Comparing user_id:', data.user_id, 'with currentUser.sub:', currentUser?.sub)
-    
+
     if (currentUser && String(data.user_id) === String(currentUser.sub)) {
       console.log('[Game] User ID matched! Updating UI...')
       showMessage('Your character has been approved! You can now fully participate.', 'success')
       if (currentCharacter && currentCharacter.id === data.character_id) {
+        console.log('[Game] Updating existing character status to APPROVED')
         currentCharacter.status = 'APPROVED'
         currentCharacter.dm_feedback = data.feedback
         renderCharacterSection(currentCharacter)
@@ -142,6 +147,8 @@ function registerCharacterEventListeners() {
         console.log('[Game] Reloading character from server...')
         loadUserCharacter(currentGame.id)
       }
+    } else {
+      console.log('[Game] User ID did not match, ignoring approval event')
     }
   })
 
@@ -149,22 +156,98 @@ function registerCharacterEventListeners() {
   socket.on('character:rejected', (data) => {
     console.log('[Game] Character rejected event received:', data)
     console.log('[Game] currentUser:', currentUser)
-    
+
     if (currentUser && String(data.user_id) === String(currentUser.sub)) {
       console.log('[Game] User ID matched! Showing rejection...')
       showMessage('The DM has requested changes to your character.', 'error')
       if (currentCharacter && currentCharacter.id === data.character_id) {
+        console.log('[Game] Updating existing character status to REJECTED')
         currentCharacter.status = 'REJECTED'
         currentCharacter.dm_feedback = data.feedback
         renderCharacterSection(currentCharacter)
       } else {
         // Reload character if we don't have it
+        console.log('[Game] Reloading character from server...')
         loadUserCharacter(currentGame.id)
       }
+    } else {
+      console.log('[Game] User ID did not match, ignoring rejection event')
     }
   })
 
   console.log('[Game] Character event listeners registered on socket:', socket)
+}
+
+function registerTurnEventListeners() {
+  if (!gameChat?.socketClient) {
+    console.warn('[Game] Cannot register turn events: no socket client')
+    return
+  }
+
+  const socket = gameChat.socketClient
+
+  socket.on('turn_update', (data) => {
+    console.log('[Game] Turn update received:', data)
+    currentTurn = data.user_id ? {
+      user_id: data.user_id,
+      character_name: data.character_name,
+      set_by: data.set_by
+    } : null
+    
+    updateTurnBanner()
+  })
+
+  console.log('[Game] Turn event listeners registered')
+}
+
+function updateTurnBanner() {
+  console.log('[Game] updateTurnBanner called', { currentTurn, currentUser, currentUserRole })
+  
+  const banner = document.getElementById('turn-banner')
+  const message = document.getElementById('turn-message')
+  const clearBtn = document.getElementById('clear-turn-btn')
+
+  if (!banner || !message || !clearBtn) {
+    console.warn('[Game] Turn banner elements not found in DOM')
+    return
+  }
+
+  if (!currentTurn || !currentTurn.user_id) {
+    // No active turn
+    console.log('[Game] No active turn, hiding banner')
+    banner.hidden = true
+    return
+  }
+
+  // Show banner
+  banner.hidden = false
+  console.log('[Game] Showing turn banner for user:', currentTurn.user_id)
+  
+  // Determine display name
+  const displayName = currentTurn.character_name || 'Unknown Player'
+  
+  // Check if it's the current user's turn
+  const isMyTurn = currentUser && 
+    String(currentTurn.user_id) === String(currentUser.sub)
+  
+  console.log('[Game] Is my turn?', isMyTurn, 'currentTurn.user_id:', currentTurn.user_id, 'currentUser.sub:', currentUser?.sub)
+  
+  if (isMyTurn) {
+    message.textContent = `It's your turn!`
+    banner.classList.add('turn-banner-active')
+  } else {
+    message.textContent = `${displayName}'s turn`
+    banner.classList.remove('turn-banner-active')
+  }
+
+  // Show clear button only for DM
+  if (currentUserRole === 'DM') {
+    clearBtn.hidden = false
+  } else {
+    clearBtn.hidden = true
+  }
+  
+  console.log('[Game] Banner updated successfully')
 }
 
 function initNPCManager(gameId) {
@@ -208,9 +291,9 @@ function renderGameInfo(game) {
     npcSection.hidden = false
     loadInviteCode(game.id)
     setupCopyInviteButton()
-    setupEncounterButton()
     initNPCManager(game.id)
     loadPendingCharacters(game.id)
+    setupClearTurnButton()
   }
 
   const leaveBtn = document.getElementById('leave-game-btn')
@@ -245,15 +328,6 @@ function setupCopyInviteButton() {
   })
 }
 
-function setupEncounterButton() {
-  const createEncounterBtn = document.getElementById('create-encounter-btn')
-  
-  if (createEncounterBtn) {
-    createEncounterBtn.addEventListener('click', () => {
-      openEncounterBuilder()
-    })
-  }
-}
 
 function setupLeaveButton(gameId) {
   const leaveBtn = document.getElementById('leave-game-btn')
@@ -261,6 +335,17 @@ function setupLeaveButton(gameId) {
 
   leaveBtn.addEventListener('click', () => {
     showLeaveModal(gameId, user)
+  })
+}
+
+function setupClearTurnButton() {
+  const clearBtn = document.getElementById('clear-turn-btn')
+  
+  clearBtn.addEventListener('click', () => {
+    if (gameChat?.socketClient && currentGame) {
+      gameChat.socketClient.clearTurn(currentGame.id)
+      showMessage('Turn order ended', 'success')
+    }
   })
 }
 
@@ -332,6 +417,7 @@ async function loadPlayers(gameId) {
     const membershipStatus = member.status
     const isActive = membershipStatus === 'ACTIVE'
     const showKickButton = canKick && !isCurrentUser && !isDM && isActive
+    const showTurnButton = currentUserRole === 'DM' && !isDM && isActive
     
     return `
       <div class="player-card ${!isActive ? 'player-card-inactive' : ''}">
@@ -348,20 +434,35 @@ async function loadPlayers(gameId) {
           </div>
         </div>
         ${isCurrentUser ? '<span class="player-status-badge status-you">You</span>' : ''}
-        ${showKickButton ? `
-          <button class="btn btn-ghost btn-kick" data-user-id="${member.user_id}" title="Kick player">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
-          </button>
-        ` : ''}
+        <div class="player-actions">
+          ${showTurnButton ? `
+            <button class="btn btn-ghost btn-sm btn-set-turn" 
+                    data-user-id="${member.user_id}" 
+                    data-character-name="${escapeHtml(member?.username || member?.name || 'Unknown')}"
+                    title="Give turn to this player">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              Give Turn
+            </button>
+          ` : ''}
+          ${showKickButton ? `
+            <button class="btn btn-ghost btn-sm btn-kick" data-user-id="${member.user_id}" title="Kick player">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+            </button>
+          ` : ''}
+        </div>
       </div>
     `
   }).join('')
 
   setupKickButtons(gameId)
+  setupTurnButtons(gameId)
 }
 
 function setupKickButtons(gameId) {
@@ -410,6 +511,28 @@ async function handleKickUser(gameId, userId) {
   }
 }
 
+function setupTurnButtons(gameId) {
+  const turnButtons = document.querySelectorAll('.btn-set-turn')
+  
+  turnButtons.forEach(button => {
+    button.addEventListener('click', (event) => {
+      event.stopPropagation()
+      const userId = parseInt(button.dataset.userId)
+      const characterName = button.dataset.characterName
+      handleSetTurn(gameId, userId, characterName)
+    })
+  })
+}
+
+function handleSetTurn(gameId, userId, characterName) {
+  if (gameChat?.socketClient) {
+    gameChat.socketClient.setTurn(gameId, userId, characterName)
+    showMessage(`Turn assigned to ${characterName}`, 'success')
+  } else {
+    showMessage('Not connected to game', 'error')
+  }
+}
+
 function setupGameActions(game) {
   window.addEventListener('beforeunload', disconnectChat)
   
@@ -431,31 +554,6 @@ function cleanupGamePage() {
     npcManager = null
   }
   
-  if (combatTracker) {
-    combatTracker.destroy()
-    combatTracker = null
-  }
-  
-  if (combatLog) {
-    combatLog.destroy()
-    combatLog = null
-  }
-  
-  if (actionPanel) {
-    actionPanel.destroy()
-    actionPanel = null
-  }
-  
-  if (encounterBuilder) {
-    encounterBuilder.destroy()
-    encounterBuilder = null
-  }
-  
-  if (reconnectOverlay) {
-    reconnectOverlay.destroy()
-    reconnectOverlay = null
-  }
-  
   if (unsubscribeRouteChange) {
     unsubscribeRouteChange()
     unsubscribeRouteChange = null
@@ -465,293 +563,6 @@ function cleanupGamePage() {
 }
 
 // ========================================
-// Combat Tracker Functions
-// ========================================
-
-/**
- * Check if there's an active encounter and initialize the combat tracker
- */
-async function checkActiveEncounter(gameId) {
-  try {
-    const response = await fetchWithAuth(`/api/v1/game/${gameId}/encounters?status=ACTIVE`)
-    
-    if (!response.ok) {
-      // No active encounters or endpoint not available
-      return
-    }
-    
-    const encounters = await response.json()
-    
-    if (encounters && encounters.length > 0) {
-      const activeEncounter = encounters[0]
-      initCombatTracker(activeEncounter.id)
-    }
-  } catch (error) {
-    console.log('[Game] No active encounters or error checking:', error.message)
-  }
-}
-
-/**
- * Initialize the combat tracker for an active encounter
- */
-function initCombatTracker(encounterId) {
-  if (combatTracker) {
-    combatTracker.destroy()
-  }
-  
-  if (!gameChat?.socketClient) {
-    console.warn('[Game] Cannot init combat tracker: no socket client')
-    return
-  }
-  
-  combatTracker = new CombatTracker({
-    encounterId: encounterId,
-    socketClient: gameChat.socketClient,
-    gameId: currentGame.id,
-    currentUserRole: currentUserRole,
-    currentCharacterId: currentCharacter?.id || null,
-    onTurnChange: (combatant, isMyTurn) => {
-      if (isMyTurn) {
-        showMessage('It\'s your turn!', 'info')
-      }
-    },
-    onEncounterEnd: (data) => {
-      showMessage(`Encounter ended: ${data.outcome}`, 'success')
-      stopCombatTracking()
-    }
-  })
-  
-  combatTracker.init()
-  
-  // Initialize combat log alongside tracker
-  initCombatLog(encounterId)
-  
-  // Initialize action panel for players
-  initActionPanel(encounterId)
-  
-  // Update reconnect overlay with active encounter
-  if (reconnectOverlay) {
-    reconnectOverlay.setActiveEncounterId(encounterId)
-  }
-}
-
-/**
- * Initialize the combat log for an active encounter
- */
-function initCombatLog(encounterId) {
-  if (combatLog) {
-    combatLog.destroy()
-  }
-  
-  if (!gameChat?.socketClient) {
-    console.warn('[Game] Cannot init combat log: no socket client')
-    return
-  }
-  
-  combatLog = new CombatLog({
-    encounterId: encounterId,
-    gameId: currentGame.id,
-    socketClient: gameChat.socketClient,
-    onError: (message) => showMessage(message, 'error')
-  })
-  
-  combatLog.init()
-  
-  // Show the combat log container
-  const combatLogContainer = document.getElementById('combat-log-container')
-  if (combatLogContainer) {
-    combatLogContainer.hidden = false
-  }
-}
-
-/**
- * Initialize the action panel for player combat actions
- */
-function initActionPanel(encounterId) {
-  // Only initialize for players, not DMs
-  if (currentUserRole === 'DM') {
-    return
-  }
-  
-  if (actionPanel) {
-    actionPanel.destroy()
-  }
-  
-  if (!gameChat?.socketClient) {
-    console.warn('[Game] Cannot init action panel: no socket client')
-    return
-  }
-  
-  if (!currentCharacter) {
-    console.warn('[Game] Cannot init action panel: no character')
-    return
-  }
-  
-  actionPanel = new ActionPanel({
-    encounterId: encounterId,
-    characterId: currentCharacter.id,
-    socketClient: gameChat.socketClient,
-    gameId: currentGame.id,
-    characterData: currentCharacter.data || {},
-    onActionSubmitted: (actionData) => {
-      console.log('[Game] Action submitted:', actionData)
-    },
-    onTargetHighlight: (combatantKey, shouldHighlight) => {
-      // Highlight targets in combat tracker
-      if (combatTracker && combatTracker.highlightCombatant) {
-        combatTracker.highlightCombatant(combatantKey, shouldHighlight)
-      }
-    },
-    getCombatants: () => {
-      // Return current combatants from combat tracker
-      if (combatTracker && combatTracker.initiativeOrder) {
-        return combatTracker.initiativeOrder.map((c) => ({
-          ...c,
-          state: combatTracker.combatantsState?.[c.key] || {}
-        }))
-      }
-      return []
-    }
-  })
-  
-  actionPanel.init()
-}
-
-/**
- * Initialize the reconnect overlay for connection loss handling
- */
-function initReconnectOverlay() {
-  if (reconnectOverlay) {
-    reconnectOverlay.destroy()
-  }
-  
-  if (!gameChat?.socketClient) {
-    console.warn('[Game] Cannot init reconnect overlay: no socket client')
-    return
-  }
-  
-  reconnectOverlay = new ReconnectOverlay({
-    socketClient: gameChat.socketClient,
-    onReconnected: () => {
-      showMessage('Connection restored!', 'success')
-    },
-    onReturnToDashboard: () => {
-      navigate('/dashboard')
-    },
-    activeEncounterId: null
-  })
-  
-  reconnectOverlay.init()
-}
-
-/**
- * Public function to start tracking an encounter (called from other components)
- */
-function startCombatTracking(encounterId) {
-  initCombatTracker(encounterId)
-}
-
-/**
- * Public function to stop tracking combat
- */
-function stopCombatTracking() {
-  if (combatTracker) {
-    combatTracker.destroy()
-    combatTracker = null
-  }
-  
-  if (combatLog) {
-    combatLog.destroy()
-    combatLog = null
-  }
-  
-  if (actionPanel) {
-    actionPanel.destroy()
-    actionPanel = null
-  }
-  
-  // Hide the combat log container
-  const combatLogContainer = document.getElementById('combat-log-container')
-  if (combatLogContainer) {
-    combatLogContainer.hidden = true
-  }
-  
-  // Clear active encounter from reconnect overlay
-  if (reconnectOverlay) {
-    reconnectOverlay.setActiveEncounterId(null)
-  }
-}
-
-// ========================================
-// Encounter Builder Functions
-// ========================================
-
-/**
- * Open the encounter builder modal (DM only)
- */
-function openEncounterBuilder(encounterId = null) {
-  if (currentUserRole !== 'DM') {
-    showMessage('Only the DM can create encounters', 'error')
-    return
-  }
-  
-  if (encounterBuilder) {
-    encounterBuilder.destroy()
-  }
-  
-  encounterBuilder = new EncounterBuilder({
-    gameId: currentGame.id,
-    encounterId: encounterId,
-    onSave: (encounter) => {
-      showMessage('Encounter saved successfully!', 'success')
-      encounterBuilder = null
-    },
-    onActivate: async (encounterId) => {
-      await activateEncounter(encounterId)
-    },
-    onCancel: () => {
-      encounterBuilder = null
-    }
-  })
-  
-  encounterBuilder.init()
-}
-
-/**
- * Activate an encounter and start combat
- */
-async function activateEncounter(encounterId) {
-  try {
-    const response = await fetchWithAuth(
-      `/api/v1/game/${currentGame.id}/encounter/${encounterId}/activate`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      }
-    )
-    
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.message || 'Failed to activate encounter')
-    }
-    
-    showMessage('Encounter activated! Rolling initiative...', 'success')
-    
-    // Initialize combat tracking for the active encounter
-    initCombatTracker(encounterId)
-  } catch (error) {
-    showMessage(error.message, 'error')
-  }
-}
-
-/**
- * Expose functions for external use (e.g., from NPC Manager)
- */
-window.gamePageActions = {
-  openEncounterBuilder,
-  startCombatTracking,
-  stopCombatTracking
-}
 
 function disconnectChat() {
   if (gameChat) {
@@ -1219,8 +1030,6 @@ function openCharacterReviewModal(characterId) {
 
   const charData = character.data || {}
   const stats = charData.abilities || {}
-  const hp = charData.hp || (10 + Math.floor(((stats.CON || 10) - 10) / 2))
-  const ac = charData.ac || 10
 
   const modalHtml = `
     <div id="character-review-modal" class="modal-overlay">
@@ -1248,30 +1057,6 @@ function openCharacterReviewModal(characterId) {
             </div>
           </div>
 
-          <div class="review-combat-stats">
-            <div class="review-combat-stat">
-              <div class="combat-stat-icon hp-icon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                </svg>
-              </div>
-              <div class="combat-stat-info">
-                <span class="combat-stat-value">${hp}</span>
-                <span class="combat-stat-label">Hit Points</span>
-              </div>
-            </div>
-            <div class="review-combat-stat">
-              <div class="combat-stat-icon ac-icon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
-                </svg>
-              </div>
-              <div class="combat-stat-info">
-                <span class="combat-stat-value">${ac}</span>
-                <span class="combat-stat-label">Armor Class</span>
-              </div>
-            </div>
-          </div>
 
           <div class="review-section">
             <h4>Ability Scores</h4>

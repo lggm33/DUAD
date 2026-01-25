@@ -25,7 +25,7 @@ class CharacterEventEmitter:
     def init(cls, socketio: SocketIO) -> None:
         """Initialize the emitter with the SocketIO instance."""
         cls._socketio = socketio
-        logger.info("[CharacterEvents] Emitter initialized")
+        logger.info("[CharacterEvents] Emitter initialized with SocketIO instance")
 
     @classmethod
     def emit_character_submitted(
@@ -41,8 +41,11 @@ class CharacterEventEmitter:
 
         Notifies the DM that a new character needs review.
         """
+        logger.info(
+            f"[CharacterEvents] Attempting to emit character:submitted for {character_name} in game {game_id}"
+        )
         if not cls._socketio:
-            logger.warning("[CharacterEvents] SocketIO not initialized")
+            logger.error("[CharacterEvents] SocketIO not initialized - cannot emit character:submitted")
             return
 
         cls._socketio.emit(
@@ -57,7 +60,7 @@ class CharacterEventEmitter:
             room=f"game_{game_id}",
         )
         logger.info(
-            f"[CharacterEvents] Emitted character:submitted for {character_name} in game {game_id}"
+            f"[CharacterEvents] Successfully emitted character:submitted for {character_name} in game {game_id}"
         )
 
     @classmethod
@@ -74,8 +77,11 @@ class CharacterEventEmitter:
 
         Notifies the player that their character has been approved.
         """
+        logger.info(
+            f"[CharacterEvents] Attempting to emit character:approved for {character_name} in game {game_id}"
+        )
         if not cls._socketio:
-            logger.warning("[CharacterEvents] SocketIO not initialized")
+            logger.error("[CharacterEvents] SocketIO not initialized - cannot emit character:approved")
             return
 
         cls._socketio.emit(
@@ -90,7 +96,7 @@ class CharacterEventEmitter:
             room=f"game_{game_id}",
         )
         logger.info(
-            f"[CharacterEvents] Emitted character:approved for {character_name} in game {game_id}"
+            f"[CharacterEvents] Successfully emitted character:approved for {character_name} in game {game_id}"
         )
 
     @classmethod
@@ -107,8 +113,11 @@ class CharacterEventEmitter:
 
         Notifies the player that their character needs changes.
         """
+        logger.info(
+            f"[CharacterEvents] Attempting to emit character:rejected for {character_name} in game {game_id}"
+        )
         if not cls._socketio:
-            logger.warning("[CharacterEvents] SocketIO not initialized")
+            logger.error("[CharacterEvents] SocketIO not initialized - cannot emit character:rejected")
             return
 
         cls._socketio.emit(
@@ -123,7 +132,7 @@ class CharacterEventEmitter:
             room=f"game_{game_id}",
         )
         logger.info(
-            f"[CharacterEvents] Emitted character:rejected for {character_name} in game {game_id}"
+            f"[CharacterEvents] Successfully emitted character:rejected for {character_name} in game {game_id}"
         )
 
 

@@ -39,7 +39,11 @@ class User(Base, IntPrimaryKeyMixin, TimestampMixin):
         "AuthRefreshToken", back_populates="user", cascade="all, delete-orphan"
     )
 
-    games: Mapped[list["Game"]] = relationship("Game", back_populates="dm_user")
+    games: Mapped[list["Game"]] = relationship(
+        "Game", 
+        back_populates="dm_user",
+        foreign_keys="Game.dm_user_id"
+    )
     game_memberships: Mapped[list["GameMembership"]] = relationship(
         "GameMembership", back_populates="user", cascade="all, delete-orphan"
     )

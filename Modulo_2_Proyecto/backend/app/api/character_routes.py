@@ -80,18 +80,22 @@ def create_character(game_id: int):
         db.get_session().commit()
 
         if character.status == CharacterStatus.PENDING_APPROVAL:
-            session = db.get_session()
-            user_repo = UserRepository(session)
-            user = user_repo.get_by_id(g.auth_user.user_id)
-            player_name = user.username if user else "Unknown"
+            try:
+                session = db.get_session()
+                user_repo = UserRepository(session)
+                user = user_repo.get_by_id(g.auth_user.user_id)
+                player_name = user.username if user else "Unknown"
 
-            CharacterEventEmitter.emit_character_submitted(
-                game_id=game_id,
-                character_id=character.id,
-                character_name=character.name,
-                player_name=player_name,
-                user_id=g.auth_user.user_id,
-            )
+                CharacterEventEmitter.emit_character_submitted(
+                    game_id=game_id,
+                    character_id=character.id,
+                    character_name=character.name,
+                    player_name=player_name,
+                    user_id=g.auth_user.user_id,
+                )
+            except Exception as e:
+                import logging
+                logging.error(f"[CharacterRoutes] Failed to emit character:submitted event: {e}")
 
         return jsonify(CharacterPresenter.public(character)), 201
     except ValueError as e:
@@ -228,18 +232,22 @@ def update_character(game_id: int, character_id: int):
 
         # Emit event if submitted for approval
         if submit_for_approval and updated_character.status == CharacterStatus.PENDING_APPROVAL:
-            session = db.get_session()
-            user_repo = UserRepository(session)
-            user = user_repo.get_by_id(g.auth_user.user_id)
-            player_name = user.username if user else "Unknown"
+            try:
+                session = db.get_session()
+                user_repo = UserRepository(session)
+                user = user_repo.get_by_id(g.auth_user.user_id)
+                player_name = user.username if user else "Unknown"
 
-            CharacterEventEmitter.emit_character_submitted(
-                game_id=game_id,
-                character_id=updated_character.id,
-                character_name=updated_character.name,
-                player_name=player_name,
-                user_id=g.auth_user.user_id,
-            )
+                CharacterEventEmitter.emit_character_submitted(
+                    game_id=game_id,
+                    character_id=updated_character.id,
+                    character_name=updated_character.name,
+                    player_name=player_name,
+                    user_id=g.auth_user.user_id,
+                )
+            except Exception as e:
+                import logging
+                logging.error(f"[CharacterRoutes] Failed to emit character:submitted event: {e}")
         return jsonify(CharacterPresenter.public(updated_character)), 200
     except ValueError as e:
         error_msg = str(e).lower()
@@ -288,13 +296,17 @@ def approve_character(game_id: int, character_id: int):
         )
         db.get_session().commit()
 
-        CharacterEventEmitter.emit_character_approved(
-            game_id=game_id,
-            character_id=character_id,
-            character_name=approved_character.name,
-            user_id=approved_character.user_id,
-            feedback=feedback,
-        )
+        try:
+            CharacterEventEmitter.emit_character_approved(
+                game_id=game_id,
+                character_id=character_id,
+                character_name=approved_character.name,
+                user_id=approved_character.user_id,
+                feedback=feedback,
+            )
+        except Exception as e:
+            import logging
+            logging.error(f"[CharacterRoutes] Failed to emit character:approved event: {e}")
 
         return jsonify(CharacterPresenter.public(approved_character)), 200
     except ValueError as e:
@@ -353,13 +365,17 @@ def reject_character(game_id: int, character_id: int):
         )
         db.get_session().commit()
 
-        CharacterEventEmitter.emit_character_rejected(
-            game_id=game_id,
-            character_id=character_id,
-            character_name=rejected_character.name,
-            user_id=rejected_character.user_id,
-            feedback=feedback,
-        )
+        try:
+            CharacterEventEmitter.emit_character_rejected(
+                game_id=game_id,
+                character_id=character_id,
+                character_name=rejected_character.name,
+                user_id=rejected_character.user_id,
+                feedback=feedback,
+            )
+        except Exception as e:
+            import logging
+            logging.error(f"[CharacterRoutes] Failed to emit character:rejected event: {e}")
 
         return jsonify(CharacterPresenter.public(rejected_character)), 200
     except ValueError as e:

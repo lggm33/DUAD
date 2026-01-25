@@ -176,14 +176,33 @@ def get_game_messages(game_id: int):
 
     # Get message history
     limit = request.args.get("limit", 50, type=int)
-    limit = min(limit, 100)  # Cap at 100 messages
+    limit = min(limit, 1000)  # Cap at 1000 messages for full history log
 
     session = db.get_session()
     chat_repo = ChatRepository(session)
     chat_service = ChatService(chat_repo)
 
     messages = chat_service.get_history(game_id, limit)
-    messages_data = [chat_service.message_to_dict(msg) for msg in messages]
+    
+    # Filter messages based on privacy rules
+    is_dm = game.dm_user_id == g.auth_user.user_id
+    filtered_messages = []
+    
+    for msg in messages:
+        if msg.message_type == "dice":
+            # DM's dice rolls are only for the DM
+            if msg.user_id == game.dm_user_id:
+                if is_dm:
+                    filtered_messages.append(msg)
+            # Player's dice rolls are for the player and the DM
+            else:
+                if is_dm or msg.user_id == g.auth_user.user_id:
+                    filtered_messages.append(msg)
+        else:
+            # Regular and system messages are for everyone
+            filtered_messages.append(msg)
+
+    messages_data = [chat_service.message_to_dict(msg) for msg in filtered_messages]
 
     return jsonify(messages_data), 200
 

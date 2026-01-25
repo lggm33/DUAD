@@ -20,6 +20,7 @@ class MessageType(str, Enum):
 
     USER = "user"
     SYSTEM = "system"
+    DICE = "dice"
 
 
 class ChatMessage(Base, IntPrimaryKeyMixin):
@@ -37,6 +38,7 @@ class ChatMessage(Base, IntPrimaryKeyMixin):
     message_type: Mapped[str] = mapped_column(
         String(20), nullable=False, default=MessageType.USER.value
     )
+    character_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

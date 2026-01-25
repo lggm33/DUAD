@@ -47,18 +47,6 @@ class NPCRepository:
             .all()
         )
 
-    def get_enemies_for_encounter(self, game_id: int) -> list[NPC]:
-        """Get active enemies and bosses for encounters."""
-        return (
-            self._session.query(NPC)
-            .filter(
-                NPC.game_id == game_id,
-                NPC.status == NPCStatus.ACTIVE,
-                NPC.npc_type.in_([NPCType.ENEMY, NPCType.BOSS]),
-            )
-            .all()
-        )
-
     def get_converted_from_character(self, character_id: int) -> Optional[NPC]:
         """Get NPC that was converted from a specific character."""
         return (

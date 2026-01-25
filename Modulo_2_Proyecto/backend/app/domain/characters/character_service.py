@@ -305,6 +305,21 @@ class CharacterService:
         """Get the user's character in a specific game."""
         return self._character_repo.get_by_game_and_user(game_id, user_id)
 
+    def get_user_approved_character_in_game(
+        self,
+        game_id: int,
+        user_id: int,
+    ) -> Optional[Character]:
+        """
+        Get the user's approved character in a specific game.
+
+        Only returns the character if it exists and has APPROVED status.
+        """
+        character = self._character_repo.get_by_game_and_user(game_id, user_id)
+        if character and character.status == CharacterStatus.APPROVED:
+            return character
+        return None
+
     def get_game_characters(
         self,
         game_id: int,

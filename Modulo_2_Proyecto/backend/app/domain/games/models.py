@@ -17,7 +17,6 @@ if TYPE_CHECKING:
     from app.domain.games.ruleset_models import RulesetTemplate
     from app.domain.characters.models import Character
     from app.domain.npcs.models import NPC
-    from app.domain.encounters.models import Encounter
 
 
 class GameStatus(str, Enum):
@@ -70,8 +69,25 @@ class Game(Base, IntPrimaryKeyMixin, TimestampMixin):
         server_default=text("'OPEN'"),
     )
 
+    # Turn tracking (volatile state, persisted for reconnection support)
+    current_turn_user_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    current_turn_character_name: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
     # Relationships
-    dm_user: Mapped["User"] = relationship("User", back_populates="games")
+    dm_user: Mapped["User"] = relationship("User", back_populates="games", foreign_keys=[dm_user_id])
+    current_turn_user: Mapped["User | None"] = relationship(
+        "User",
+        foreign_keys=[current_turn_user_id],
+        lazy="joined",
+    )
     ruleset_template: Mapped["RulesetTemplate | None"] = relationship(
         "RulesetTemplate",
         back_populates="games",
@@ -87,9 +103,6 @@ class Game(Base, IntPrimaryKeyMixin, TimestampMixin):
     )
     npcs: Mapped[list["NPC"]] = relationship(
         "NPC", back_populates="game", cascade="all, delete-orphan"
-    )
-    encounters: Mapped[list["Encounter"]] = relationship(
-        "Encounter", back_populates="game", cascade="all, delete-orphan"
     )
 
     def requires_character_approval(self) -> bool:

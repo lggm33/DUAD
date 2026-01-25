@@ -23,10 +23,10 @@ class TestSocketIOModuleStructure:
         from app.realtime.chat_events import register_chat_events
         assert callable(register_chat_events)
 
-    def test_combat_events_imports(self):
-        """Verify combat_events module imports correctly."""
-        from app.realtime.combat_events import register_combat_events
-        assert callable(register_combat_events)
+    def test_character_events_imports(self):
+        """Verify character_events module imports correctly."""
+        from app.realtime.character_events import register_character_events
+        assert callable(register_character_events)
 
     def test_main_orchestrator_imports(self):
         """Verify main socketio_events orchestrator imports correctly."""
@@ -42,5 +42,5 @@ class TestSocketIOModuleStructure:
         assert hasattr(orchestrator, 'register_connection_events')
         assert hasattr(orchestrator, 'register_game_room_events')
         assert hasattr(orchestrator, 'register_chat_events')
-        assert hasattr(orchestrator, 'register_combat_events')
+        assert hasattr(orchestrator, 'register_character_events')
 

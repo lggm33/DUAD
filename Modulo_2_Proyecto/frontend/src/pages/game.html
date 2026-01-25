@@ -50,11 +50,21 @@
 
   <!-- Game Content -->
   <div id="game-content" class="game-content" hidden>
+    <!-- Turn Tracker Banner -->
+    <div id="turn-banner" class="turn-banner" hidden>
+      <div class="turn-banner-content">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span id="turn-message">Waiting for turn...</span>
+      </div>
+      <button id="clear-turn-btn" class="btn btn-ghost btn-sm" hidden>End Turn Order</button>
+    </div>
+
     <!-- Messages -->
     <div id="game-message" class="game-message" hidden></div>
 
-    <!-- Combat Tracker Section (rendered dynamically when encounter is active) -->
-    <section id="combat-tracker-container" class="game-section combat-tracker-section" hidden></section>
 
     <!-- Chat Section -->
     <section class="game-section chat-section">
@@ -63,28 +73,54 @@
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
           </svg>
-          Adventure Log
+          Game Logs
         </h2>
-        <div id="chat-connection-status" class="chat-connection-status">
-          <span class="status-indicator status-disconnected"></span>
-          <span class="status-text">Disconnected</span>
+        <div class="section-header-right-actions">
+          <a id="view-history-link" href="#" data-link class="btn btn-ghost btn-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 8v4l3 3"></path>
+              <circle cx="12" cy="12" r="9"></circle>
+            </svg>
+            <span>View Full History</span>
+          </a>
+          <div id="chat-connection-status" class="chat-connection-status">
+            <span class="status-indicator status-disconnected"></span>
+            <span class="status-text">Disconnected</span>
+          </div>
         </div>
       </div>
 
+      <div class="chat-tabs">
+        <button class="chat-tab-btn active" data-tab="activity">Activity</button>
+        <button class="chat-tab-btn" data-tab="adventure">Adventure Log</button>
+        <button class="chat-tab-btn" data-tab="chat">Chat</button>
+      </div>
+
       <div class="chat-container">
+        <!-- Chat Status States -->
+        <div id="chat-loading" class="chat-loading">
+          <span class="loader"></span>
+          <span>Loading messages...</span>
+        </div>
+        <div id="chat-empty" class="chat-empty" hidden>
+          <p>No messages yet. Start the adventure!</p>
+        </div>
+
         <!-- Chat Messages -->
         <div id="chat-messages" class="chat-messages">
-          <div id="chat-loading" class="chat-loading">
-            <span class="loader"></span>
-            <span>Loading messages...</span>
-          </div>
-          <div id="chat-empty" class="chat-empty" hidden>
-            <p>No messages yet. Start the adventure!</p>
-          </div>
         </div>
 
         <!-- Chat Input -->
         <div class="chat-input-container">
+          <div class="chat-dice-toolbar">
+            <button type="button" class="dice-btn" data-dice="1d4" title="Roll 1d4">d4</button>
+            <button type="button" class="dice-btn" data-dice="1d6" title="Roll 1d6">d6</button>
+            <button type="button" class="dice-btn" data-dice="1d8" title="Roll 1d8">d8</button>
+            <button type="button" class="dice-btn" data-dice="1d10" title="Roll 1d10">d10</button>
+            <button type="button" class="dice-btn" data-dice="1d12" title="Roll 1d12">d12</button>
+            <button type="button" class="dice-btn" data-dice="1d20" title="Roll 1d20">d20</button>
+            <button type="button" class="dice-btn" data-dice="1d100" title="Roll 1d100">d100</button>
+          </div>
           <form id="chat-form" class="chat-form">
             <input 
               type="text" 
@@ -132,17 +168,6 @@
           <p class="dm-control-hint">Share this code with players to invite them</p>
         </div>
 
-        <div class="dm-control-card">
-          <h3>Encounters</h3>
-          <p class="dm-control-description">Create and manage combat encounters for your party.</p>
-          <button id="create-encounter-btn" class="btn btn-outline">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            Create Encounter
-          </button>
-        </div>
 
         <div class="dm-control-card dm-control-card-pending" id="pending-characters-card" hidden>
           <div class="dm-control-card-header">
@@ -193,60 +218,6 @@
       <div id="players-list" class="players-list" hidden></div>
     </section>
 
-    <!-- Combat Log Section - Shown during active encounters -->
-    <section id="combat-log-container" class="game-section combat-log-section" hidden>
-      <div class="section-header">
-        <h2 class="section-title">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
-            <polyline points="10 9 9 9 8 9"></polyline>
-          </svg>
-          Combat Log
-        </h2>
-      </div>
-
-      <div class="combat-log-container">
-        <!-- Header with Filter -->
-        <div class="combat-log-header">
-          <div class="combat-log-title">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
-            <span>Live Feed</span>
-          </div>
-          
-          <div class="combat-log-filter">
-            <button id="combat-log-filter-btn" class="combat-log-filter-btn" type="button">
-              <span>Filter</span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="6 9 12 15 18 9"></polyline>
-              </svg>
-            </button>
-            <div id="combat-log-filter-dropdown" class="combat-log-filter-dropdown">
-              <button type="button" class="combat-log-filter-option is-active" data-filter="all">All Actions</button>
-              <button type="button" class="combat-log-filter-option" data-filter="combat">Combat Only</button>
-              <button type="button" class="combat-log-filter-option" data-filter="turns">Turns Only</button>
-              <button type="button" class="combat-log-filter-option" data-filter="damage">Damage & Healing</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Log List -->
-        <div id="combat-log-list" class="combat-log-list">
-          <div id="combat-log-loading" class="combat-log-loading">
-            <span class="loader"></span>
-            <span>Loading combat log...</span>
-          </div>
-          <div id="combat-log-empty" class="combat-log-empty" hidden>
-            <p>No combat actions yet. Waiting for encounter to begin...</p>
-          </div>
-        </div>
-      </div>
-    </section>
 
     
   </div>

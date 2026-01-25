@@ -172,6 +172,137 @@
   gap: var(--space-xl);
 }
 
+/* Turn Tracker Banner */
+.turn-banner {
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.15) 0%, rgba(20, 184, 166, 0.15) 100%);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-xl);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  animation: slideDown 0.4s ease-out;
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.1);
+  margin-bottom: var(--space-lg);
+  transition: all var(--transition-base);
+}
+
+.turn-banner[hidden] {
+  display: none;
+}
+
+.turn-banner-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  color: var(--color-cyan);
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.turn-banner-content svg {
+  flex-shrink: 0;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+#turn-message {
+  color: var(--color-text);
+}
+
+#turn-message strong {
+  color: var(--color-cyan);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+@keyframes slideDown {
+  from { 
+    transform: translateY(-20px); 
+    opacity: 0; 
+  }
+  to { 
+    transform: translateY(0); 
+    opacity: 1; 
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { 
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+}
+
+/* Active turn (current user's turn) */
+.turn-banner.turn-banner-active {
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.3) 0%, rgba(20, 184, 166, 0.3) 100%);
+  border: 2px solid var(--color-cyan);
+  box-shadow: 0 0 30px rgba(34, 211, 238, 0.3),
+              0 0 60px rgba(34, 211, 238, 0.1);
+}
+
+.turn-banner.turn-banner-active #turn-message {
+  color: var(--color-cyan);
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+.turn-banner.turn-banner-active .turn-banner-content svg {
+  color: var(--color-cyan);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+/* Clear turn button */
+#clear-turn-btn {
+  padding: var(--space-xs) var(--space-md);
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  transition: all var(--transition-fast);
+}
+
+#clear-turn-btn:hover {
+  color: var(--color-error);
+  background: rgba(239, 68, 68, 0.1);
+  border-color: var(--color-error);
+}
+
+.player-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-left: auto;
+}
+
+.btn-turn {
+  padding: var(--space-xs) var(--space-sm);
+  font-size: 0.8125rem;
+  color: var(--color-cyan);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  background: transparent;
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.btn-turn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.btn-turn:hover {
+  color: var(--color-cyan);
+  background: rgba(34, 211, 238, 0.15);
+  border-color: var(--color-cyan);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(34, 211, 238, 0.2);
+}
+
 .game-content[hidden] {
   display: none;
 }
@@ -1105,59 +1236,6 @@
   padding-right: var(--space-sm);
 }
 
-.review-combat-stats {
-  display: flex;
-  gap: var(--space-lg);
-  margin-bottom: var(--space-lg);
-  padding: var(--space-md);
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-}
-
-.review-combat-stat {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.combat-stat-icon {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-md);
-}
-
-.combat-stat-icon.hp-icon {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-}
-
-.combat-stat-icon.ac-icon {
-  background: rgba(59, 130, 246, 0.15);
-  color: #3b82f6;
-}
-
-.combat-stat-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.combat-stat-value {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--color-text);
-  line-height: 1.2;
-}
-
-.combat-stat-label {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
 
 .review-info-box {
   padding: var(--space-md);
@@ -1321,6 +1399,34 @@
 
   .review-actions .btn {
     width: 100%;
+  }
+
+  /* Turn banner responsive */
+  .turn-banner {
+    padding: var(--space-sm) var(--space-md);
+    flex-direction: column;
+    gap: var(--space-sm);
+    text-align: center;
+  }
+
+  .turn-banner-content {
+    justify-content: center;
+  }
+
+  #clear-turn-btn {
+    width: 100%;
+  }
+
+  /* Player actions responsive */
+  .player-card {
+    flex-wrap: wrap;
+  }
+
+  .player-actions {
+    width: 100%;
+    justify-content: flex-end;
+    margin-left: 0;
+    margin-top: var(--space-xs);
   }
 }
 
