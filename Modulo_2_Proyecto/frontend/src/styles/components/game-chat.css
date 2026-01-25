@@ -346,6 +346,45 @@
   color: var(--color-cyan);
 }
 
+/* Disabled dice button styles */
+.dice-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+  background: var(--color-bg-card);
+}
+
+.dice-btn:disabled:hover {
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+  background: var(--color-bg-card);
+  transform: none;
+}
+
+/* Tooltip for disabled dice button */
+.dice-btn[disabled][title] {
+  position: relative;
+}
+
+.dice-btn[disabled][title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  z-index: 100;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
 .chat-form {
   display: flex;
   gap: var(--space-sm);

@@ -6,6 +6,7 @@
  */
 
 import { fetchWithAuth, escapeHtml, getInitials } from '../utils/index.js'
+import { DiceService } from '../utils/dice-service.js'
 
 const MODAL_ID = 'npc-manager-modal'
 const FORM_MODAL_ID = 'npc-form-modal'
@@ -29,6 +30,7 @@ export class NPCManager {
   /**
    * @param {Object} options - Configuration options
    * @param {number} options.gameId - The ID of the game
+   * @param {Object} options.socketClient - Socket client for real-time communication
    * @param {Function} options.onNPCCreated - Callback when NPC is created
    * @param {Function} options.onNPCUpdated - Callback when NPC is updated
    * @param {Function} options.onNPCDeleted - Callback when NPC is deleted
@@ -37,6 +39,7 @@ export class NPCManager {
    */
   constructor(options) {
     this.gameId = options.gameId
+    this.socketClient = options.socketClient
     this.onNPCCreated = options.onNPCCreated
     this.onNPCUpdated = options.onNPCUpdated
     this.onNPCDeleted = options.onNPCDeleted
@@ -371,7 +374,24 @@ export class NPCManager {
         </div>
 
         ${npc.status === 'ACTIVE' ? `
+          <div class="npc-dice-toolbar">
+            <button class="dice-btn" data-dice="1d4" data-npc-id="${npc.id}" title="Roll d4">d4</button>
+            <button class="dice-btn" data-dice="1d6" data-npc-id="${npc.id}" title="Roll d6">d6</button>
+            <button class="dice-btn" data-dice="1d8" data-npc-id="${npc.id}" title="Roll d8">d8</button>
+            <button class="dice-btn" data-dice="1d10" data-npc-id="${npc.id}" title="Roll d10">d10</button>
+            <button class="dice-btn" data-dice="1d12" data-npc-id="${npc.id}" title="Roll d12">d12</button>
+            <button class="dice-btn dice-btn-primary" data-dice="1d20" data-npc-id="${npc.id}" title="Roll d20">d20</button>
+            <button class="dice-btn" data-dice="1d100" data-npc-id="${npc.id}" title="Roll d100">d100</button>
+          </div>
+
           <div class="npc-card-footer">
+            <button class="btn btn-ghost btn-xs npc-turn-btn" data-npc-id="${npc.id}" title="Give turn to ${escapeHtml(npc.name)}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              Give Turn
+            </button>
             <button class="btn btn-ghost btn-xs npc-convert-btn" data-npc-id="${npc.id}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -435,6 +455,12 @@ export class NPCManager {
         this.openConvertToPC(npcId)
       })
     })
+
+    // NPC dice buttons
+    this.setupNPCDiceButtons()
+
+    // NPC turn buttons
+    this.setupNPCTurnButtons()
   }
 
   /**
@@ -843,6 +869,109 @@ export class NPCManager {
       document.body.style.overflow = ''
     }
     this.editingNPC = null
+  }
+
+  /**
+   * Setup dice button event listeners for NPCs
+   */
+  setupNPCDiceButtons() {
+    const npcDiceButtons = document.querySelectorAll('.npc-dice-toolbar .dice-btn')
+    npcDiceButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const formula = btn.dataset.dice
+        const npcId = btn.dataset.npcId
+        const npc = this.npcs.find(n => n.id === parseInt(npcId))
+        if (npc) {
+          this.performNPCRoll(formula, npc)
+        }
+      })
+    })
+  }
+
+  /**
+   * Perform a dice roll for an NPC
+   * @param {string} formula - Dice formula (e.g., "1d20")
+   * @param {Object} npc - NPC object
+   */
+  async performNPCRoll(formula, npc) {
+    if (!this.socketClient) {
+      console.error('[NPCManager] No socket client available for dice roll')
+      this.onError('Socket connection not available. Please wait a moment and try again.')
+      return
+    }
+
+    try {
+      // Roll the dice
+      const result = DiceService.roll(formula)
+      DiceService.showRollResult(result, `${npc.name} Roll`)
+      
+      // Format content for chat message
+      const rollDetails = result.rolls.join(' + ')
+      const modifierText = result.modifier !== 0 
+        ? (result.modifier > 0 ? ` + ${result.modifier}` : ` - ${Math.abs(result.modifier)}`) 
+        : ''
+      const content = `rolled ${formula}: ${result.total} (${rollDetails}${modifierText})`
+      
+      console.log('[NPCManager] Sending NPC dice roll:', { npc: npc.id, formula, result: result.total })
+      
+      // Send with NPC context
+      this.socketClient.sendChatMessage(parseInt(this.gameId), content, {
+        message_type: 'dice',
+        npc_id: npc.id,
+        npc_name: npc.name
+      })
+    } catch (error) {
+      console.error('[NPCManager] Error rolling dice:', error)
+      this.onError(`Failed to roll dice: ${error.message}`)
+    }
+  }
+
+  /**
+   * Setup turn button event listeners for NPCs
+   */
+  setupNPCTurnButtons() {
+    const turnButtons = document.querySelectorAll('.npc-card .npc-turn-btn')
+    turnButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const npcId = btn.dataset.npcId
+        const npc = this.npcs.find(n => n.id === parseInt(npcId))
+        if (npc) {
+          this.handleSetTurnNPC(npc)
+        }
+      })
+    })
+  }
+
+  /**
+   * Set turn to an NPC
+   * @param {Object} npc - NPC object
+   */
+  handleSetTurnNPC(npc) {
+    if (!this.socketClient) {
+      console.error('[NPCManager] No socket client available')
+      this.onError('Socket connection not available. Please wait a moment and try again.')
+      return
+    }
+
+    console.log('[NPCManager] Setting turn to NPC:', npc.id, npc.name)
+    this.socketClient.setTurnNPC(
+      parseInt(this.gameId),
+      npc.id,
+      npc.name,
+      npc.npc_type
+    )
+    this.onSuccess(`Turn assigned to ${npc.name}`)
+  }
+
+  /**
+   * Update the socket client (called after socket connection is ready)
+   * @param {Object} socketClient - The socket client instance
+   */
+  setSocketClient(socketClient) {
+    this.socketClient = socketClient
+    console.log('[NPCManager] Socket client updated:', !!socketClient)
   }
 
   /**

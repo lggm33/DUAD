@@ -127,8 +127,24 @@ export class SocketIOClient {
 
     this.socket.emit('set_turn', {
       game_id: gameId,
+      turn_type: 'USER',
       user_id: userId,
       character_name: characterName
+    })
+  }
+
+  /**
+   * Set the active turn to an NPC (DM only).
+   */
+  setTurnNPC(gameId, npcId, displayName, npcType) {
+    if (!this._checkConnection('setTurnNPC')) return
+
+    this.socket.emit('set_turn', {
+      game_id: gameId,
+      turn_type: 'NPC',
+      npc_id: npcId,
+      display_name: displayName,
+      npc_type: npcType
     })
   }
 

@@ -12,7 +12,7 @@ import { DiceService } from '../utils/dice-service.js'
  * Works with existing HTML structure in game.html
  */
 export class GameChat {
-  constructor({ gameId, onMessage, onError, onConnected }) {
+  constructor({ gameId, onMessage, onError, onConnected, isDM }) {
     this.gameId = gameId
     this.onMessage = onMessage || (() => {})
     this.onError = onError || (() => {})
@@ -21,6 +21,8 @@ export class GameChat {
     this.currentUser = getUserFromToken()
     this.activeTab = 'activity' // 'activity', 'adventure', 'chat'
     this.messages = [] // Local cache of messages
+    this.currentTurn = null // Current turn state { user_id, character_name }
+    this.isDM = isDM || false // Whether current user is DM
   }
 
   /**
@@ -31,6 +33,9 @@ export class GameChat {
     this.setupChatForm()
     this.setupTabs()
     this.setupDiceButtons()
+    
+    // Initialize dice button state (will be updated when turn is synced)
+    this.updateDiceButtonState()
     
     await this.loadMessageHistory()
     
@@ -365,5 +370,76 @@ export class GameChat {
     const div = document.createElement('div')
     div.textContent = text
     return div.innerHTML
+  }
+
+  /**
+   * Called when turn state changes
+   * @param {Object|null} turnData - { user_id, character_name } or null
+   */
+  onTurnUpdate(turnData) {
+    console.log('[GameChat] Turn update received:', turnData)
+    this.currentTurn = turnData
+    this.updateDiceButtonState()
+  }
+
+  /**
+   * Updates dice button state based on current turn
+   */
+  updateDiceButtonState() {
+    const diceButtons = document.querySelectorAll('.dice-btn')
+    if (diceButtons.length === 0) {
+      console.warn('[GameChat] Dice buttons not found')
+      return
+    }
+
+    let shouldDisable = false
+    let titleText = ''
+
+    // DM can always roll dice
+    if (this.isDM) {
+      shouldDisable = false
+      
+      if (this.currentTurn?.turn_type === 'NPC') {
+        titleText = 'DM: Use NPC card dice buttons for NPC rolls'
+      } else {
+        titleText = 'Roll dice (DM can always roll)'
+      }
+    }
+    // NPC turn: players cannot roll
+    else if (this.currentTurn?.turn_type === 'NPC') {
+      shouldDisable = true
+      titleText = `It's ${this.currentTurn.character_name || "an NPC"}'s turn (NPC)`
+    }
+    // USER turn: check if it's the current user's turn
+    else if (this.currentTurn?.turn_type === 'USER') {
+      const isMyTurn = this.currentUser && 
+        String(this.currentTurn.user_id) === String(this.currentUser.sub)
+
+      if (isMyTurn) {
+        shouldDisable = false
+        titleText = "It's your turn - roll dice"
+      } else {
+        shouldDisable = true
+        titleText = `It's ${this.currentTurn.character_name || "another player"}'s turn`
+      }
+    }
+    // No turn assigned: only DM can roll
+    else {
+      shouldDisable = true
+      titleText = 'Only DM can roll dice when no turn is assigned'
+    }
+
+    // Apply state to all dice buttons
+    diceButtons.forEach(btn => {
+      btn.disabled = shouldDisable
+      btn.title = titleText
+    })
+
+    console.log('[GameChat] Dice buttons updated:', { 
+      count: diceButtons.length,
+      disabled: shouldDisable, 
+      isDM: this.isDM,
+      currentTurn: this.currentTurn 
+    })
   }
 }

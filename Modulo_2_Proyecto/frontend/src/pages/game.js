@@ -78,14 +78,21 @@ async function loadGame(gameId) {
 }
 
 function initChatComponent(gameId) {
+  const isDM = currentUserRole === 'DM'
+  
   gameChat = new GameChat({
     gameId,
+    isDM,
     onError: (message) => showMessage(message, 'error'),
     onConnected: () => {
       // Register character event listeners when socket is connected
       registerCharacterEventListeners()
       // Register turn management listeners
       registerTurnEventListeners()
+      // Update NPCManager with socket client
+      if (npcManager && gameChat?.socketClient) {
+        npcManager.setSocketClient(gameChat.socketClient)
+      }
     }
   })
 
@@ -97,6 +104,10 @@ function initChatComponent(gameId) {
     if (gameChat?.socketClient && !gameChat.socketClient.eventHandlers.has('turn_update')) {
       console.log('[Game] Registering turn listeners (delayed fallback)')
       registerTurnEventListeners()
+    }
+    // Update NPCManager with socket client (fallback)
+    if (npcManager && gameChat?.socketClient) {
+      npcManager.setSocketClient(gameChat.socketClient)
     }
   }, 1000)
 }
@@ -188,13 +199,34 @@ function registerTurnEventListeners() {
 
   socket.on('turn_update', (data) => {
     console.log('[Game] Turn update received:', data)
-    currentTurn = data.user_id ? {
-      user_id: data.user_id,
-      character_name: data.character_name,
-      set_by: data.set_by
-    } : null
+    
+    // Support both USER and NPC turns
+    if (data.turn_type === 'USER' && data.user_id) {
+      currentTurn = {
+        turn_type: 'USER',
+        user_id: data.user_id,
+        character_name: data.character_name,
+        set_by: data.set_by
+      }
+    } else if (data.turn_type === 'NPC' && data.npc_id) {
+      currentTurn = {
+        turn_type: 'NPC',
+        npc_id: data.npc_id,
+        character_name: data.character_name,
+        npc_type: data.npc_type,
+        set_by: data.set_by
+      }
+    } else {
+      // Clear turn (backwards compatibility with old data.user_id check)
+      currentTurn = null
+    }
     
     updateTurnBanner()
+    
+    // Notify chat component to update dice button state
+    if (gameChat) {
+      gameChat.onTurnUpdate(currentTurn)
+    }
   })
 
   console.log('[Game] Turn event listeners registered')
@@ -212,39 +244,54 @@ function updateTurnBanner() {
     return
   }
 
-  if (!currentTurn || !currentTurn.user_id) {
+  if (!currentTurn) {
     // No active turn
     console.log('[Game] No active turn, hiding banner')
     banner.hidden = true
+    banner.classList.remove('turn-banner-active', 'turn-banner-npc')
     return
   }
 
   // Show banner
   banner.hidden = false
-  console.log('[Game] Showing turn banner for user:', currentTurn.user_id)
   
-  // Determine display name
-  const displayName = currentTurn.character_name || 'Unknown Player'
-  
-  // Check if it's the current user's turn
-  const isMyTurn = currentUser && 
-    String(currentTurn.user_id) === String(currentUser.sub)
-  
-  console.log('[Game] Is my turn?', isMyTurn, 'currentTurn.user_id:', currentTurn.user_id, 'currentUser.sub:', currentUser?.sub)
-  
-  if (isMyTurn) {
-    message.textContent = `It's your turn!`
-    banner.classList.add('turn-banner-active')
-  } else {
-    message.textContent = `${displayName}'s turn`
+  if (currentTurn.turn_type === 'NPC') {
+    // NPC Turn
+    console.log('[Game] Showing turn banner for NPC:', currentTurn.npc_id)
+    
+    const displayName = currentTurn.character_name || 'Unknown NPC'
+    const npcType = currentTurn.npc_type || 'NPC'
+    
+    message.textContent = `${displayName} (NPC - ${npcType})`
     banner.classList.remove('turn-banner-active')
-  }
+    banner.classList.add('turn-banner-npc')
+    
+    // Show clear button only for DM
+    clearBtn.hidden = currentUserRole !== 'DM'
+    
+  } else if (currentTurn.turn_type === 'USER') {
+    // USER Turn
+    console.log('[Game] Showing turn banner for user:', currentTurn.user_id)
+    
+    const displayName = currentTurn.character_name || 'Unknown Player'
+    
+    // Check if it's the current user's turn
+    const isMyTurn = currentUser && 
+      String(currentTurn.user_id) === String(currentUser.sub)
+    
+    console.log('[Game] Is my turn?', isMyTurn, 'currentTurn.user_id:', currentTurn.user_id, 'currentUser.sub:', currentUser?.sub)
+    
+    if (isMyTurn) {
+      message.textContent = `It's your turn!`
+      banner.classList.add('turn-banner-active')
+      banner.classList.remove('turn-banner-npc')
+    } else {
+      message.textContent = `${displayName}'s turn`
+      banner.classList.remove('turn-banner-active', 'turn-banner-npc')
+    }
 
-  // Show clear button only for DM
-  if (currentUserRole === 'DM') {
-    clearBtn.hidden = false
-  } else {
-    clearBtn.hidden = true
+    // Show clear button only for DM
+    clearBtn.hidden = currentUserRole !== 'DM'
   }
   
   console.log('[Game] Banner updated successfully')
@@ -253,6 +300,7 @@ function updateTurnBanner() {
 function initNPCManager(gameId) {
   npcManager = new NPCManager({
     gameId,
+    socketClient: gameChat?.socketClient,
     onNPCCreated: (npc) => {
       console.log('NPC created:', npc)
     },

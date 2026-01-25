@@ -16,7 +16,8 @@ if TYPE_CHECKING:
     from app.domain.users.models import User
     from app.domain.games.ruleset_models import RulesetTemplate
     from app.domain.characters.models import Character
-    from app.domain.npcs.models import NPC
+
+from app.domain.npcs.models import NPC
 
 
 class GameStatus(str, Enum):
@@ -29,6 +30,13 @@ class CharacterCreationMode(str, Enum):
 
     OPEN = "OPEN"  # Auto-approved if validation passes
     DM_APPROVAL = "DM_APPROVAL"  # Requires DM approval
+
+
+class TurnType(str, Enum):
+    """Type of entity that has the current turn."""
+
+    USER = "USER"  # Player character
+    NPC = "NPC"  # Non-player character
 
 
 class Game(Base, IntPrimaryKeyMixin, TimestampMixin):
@@ -70,6 +78,10 @@ class Game(Base, IntPrimaryKeyMixin, TimestampMixin):
     )
 
     # Turn tracking (volatile state, persisted for reconnection support)
+    current_turn_type: Mapped[TurnType | None] = mapped_column(
+        String(10),
+        nullable=True,
+    )
     current_turn_user_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("users.id", ondelete="SET NULL"),
@@ -80,12 +92,23 @@ class Game(Base, IntPrimaryKeyMixin, TimestampMixin):
         String(255),
         nullable=True,
     )
+    current_turn_npc_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("npcs.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     # Relationships
     dm_user: Mapped["User"] = relationship("User", back_populates="games", foreign_keys=[dm_user_id])
     current_turn_user: Mapped["User | None"] = relationship(
         "User",
         foreign_keys=[current_turn_user_id],
+        lazy="joined",
+    )
+    current_turn_npc: Mapped["NPC | None"] = relationship(
+        "NPC",
+        foreign_keys=[current_turn_npc_id],
         lazy="joined",
     )
     ruleset_template: Mapped["RulesetTemplate | None"] = relationship(
@@ -101,8 +124,11 @@ class Game(Base, IntPrimaryKeyMixin, TimestampMixin):
     characters: Mapped[list["Character"]] = relationship(
         "Character", back_populates="game", cascade="all, delete-orphan"
     )
-    npcs: Mapped[list["NPC"]] = relationship(
-        "NPC", back_populates="game", cascade="all, delete-orphan"
+    npcs: Mapped[list[NPC]] = relationship(
+        NPC,
+        back_populates="game",
+        foreign_keys=[NPC.game_id],
+        cascade="all, delete-orphan"
     )
 
     def requires_character_approval(self) -> bool:

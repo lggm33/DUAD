@@ -11,7 +11,8 @@ from flask_socketio import emit, join_room, leave_room
 from app.extensions import db
 from app.domain.games.game_membership_repository import GameMembershipRepository
 from app.domain.games.game_repository import GameRepository
-from app.domain.games.models import GameMembershipStatus, GameRoleInGame
+from app.domain.games.models import GameMembershipStatus, GameRoleInGame, TurnType
+from app.domain.npcs.npc_repository import NPCRepository
 
 logger = logging.getLogger(__name__)
 
@@ -71,12 +72,22 @@ def register_game_room_events(socketio, app, shared_state, helpers):
                 
                 # Send current turn state to the joining user
                 game = game_repo.get_game_by_id(game_id)
-                if game and game.current_turn_user_id:
-                    emit("turn_update", {
-                        "user_id": game.current_turn_user_id,
-                        "character_name": game.current_turn_character_name,
+                if game and (game.current_turn_user_id or game.current_turn_npc_id):
+                    turn_data = {
+                        "turn_type": game.current_turn_type,
                         "set_by": None  # Historical info not stored
-                    })
+                    }
+                    
+                    if game.current_turn_type == TurnType.USER:
+                        turn_data["user_id"] = game.current_turn_user_id
+                        turn_data["character_name"] = game.current_turn_character_name
+                    elif game.current_turn_type == TurnType.NPC:
+                        turn_data["npc_id"] = game.current_turn_npc_id
+                        if game.current_turn_npc:
+                            turn_data["character_name"] = game.current_turn_npc.name
+                            turn_data["npc_type"] = game.current_turn_npc.npc_type.value
+                    
+                    emit("turn_update", turn_data)
 
         except Exception as e:
             logger.error(f"[SocketIO] Error joining game: {e}")
@@ -91,20 +102,23 @@ def register_game_room_events(socketio, app, shared_state, helpers):
             return
 
         game_id = data.get("game_id")
-        target_user_id = data.get("user_id")
-        character_name = data.get("character_name")
+        turn_type = data.get("turn_type", "USER")
+        
+        # Validate turn_type
+        if turn_type not in ["USER", "NPC"]:
+            emit("error", {"code": "INVALID_DATA", "message": "turn_type must be USER or NPC"})
+            return
 
-        if not game_id or not target_user_id:
-            emit("error", {"code": "INVALID_DATA", "message": "game_id and user_id are required"})
+        if not game_id:
+            emit("error", {"code": "INVALID_DATA", "message": "game_id is required"})
             return
 
         try:
-            # Convert to integers (frontend sends as strings)
+            # Convert game_id to integer
             try:
                 game_id = int(game_id)
-                target_user_id = int(target_user_id)
-            except (ValueError, TypeError) as e:
-                emit("error", {"code": "INVALID_DATA", "message": "Invalid game_id or user_id format"})
+            except (ValueError, TypeError):
+                emit("error", {"code": "INVALID_DATA", "message": "Invalid game_id format"})
                 return
             
             with app.app_context():
@@ -116,19 +130,77 @@ def register_game_room_events(socketio, app, shared_state, helpers):
                     emit("error", {"code": "GAME_NOT_FOUND", "message": "Game not found"})
                     return
                 
-                # Persist turn state to database
-                game.current_turn_user_id = target_user_id
-                game.current_turn_character_name = character_name
-                session.commit()
+                turn_data = {
+                    "turn_type": turn_type,
+                    "set_by": user["user_id"]
+                }
                 
-                logger.info(f"[SocketIO] Turn set to user {target_user_id} in game {game_id}")
+                if turn_type == "USER":
+                    # USER turn logic
+                    target_user_id = data.get("user_id")
+                    character_name = data.get("character_name")
+                    
+                    if not target_user_id:
+                        emit("error", {"code": "INVALID_DATA", "message": "user_id is required for USER turn"})
+                        return
+                    
+                    try:
+                        target_user_id = int(target_user_id)
+                    except (ValueError, TypeError):
+                        emit("error", {"code": "INVALID_DATA", "message": "Invalid user_id format"})
+                        return
+                    
+                    # Set USER turn
+                    game.current_turn_type = TurnType.USER
+                    game.current_turn_user_id = target_user_id
+                    game.current_turn_character_name = character_name
+                    game.current_turn_npc_id = None
+                    
+                    turn_data["user_id"] = target_user_id
+                    turn_data["character_name"] = character_name
+                    
+                    logger.info(f"[SocketIO] Turn set to user {target_user_id} in game {game_id}")
+                    
+                elif turn_type == "NPC":
+                    # NPC turn logic
+                    npc_id = data.get("npc_id")
+                    display_name = data.get("display_name")
+                    npc_type = data.get("npc_type")
+                    
+                    if not npc_id:
+                        emit("error", {"code": "INVALID_DATA", "message": "npc_id is required for NPC turn"})
+                        return
+                    
+                    try:
+                        npc_id = int(npc_id)
+                    except (ValueError, TypeError):
+                        emit("error", {"code": "INVALID_DATA", "message": "Invalid npc_id format"})
+                        return
+                    
+                    # Validate NPC exists and belongs to this game
+                    npc_repo = NPCRepository(session)
+                    npc = npc_repo.get_by_id(npc_id)
+                    
+                    if not npc or npc.game_id != game_id:
+                        emit("error", {"code": "NPC_NOT_FOUND", "message": "NPC not found in this game"})
+                        return
+                    
+                    # Set NPC turn
+                    game.current_turn_type = TurnType.NPC
+                    game.current_turn_npc_id = npc_id
+                    game.current_turn_user_id = None
+                    game.current_turn_character_name = None
+                    
+                    turn_data["npc_id"] = npc_id
+                    turn_data["character_name"] = display_name or npc.name
+                    turn_data["npc_type"] = npc_type or npc.npc_type.value
+                    
+                    logger.info(f"[SocketIO] Turn set to NPC {npc_id} in game {game_id}")
+                
+                session.commit()
 
             # Broadcast turn update to everyone
-            emit("turn_update", {
-                "user_id": target_user_id,
-                "character_name": character_name,
-                "set_by": user["user_id"]
-            }, room=f"game_{game_id}")
+            emit("turn_update", turn_data, room=f"game_{game_id}")
             
         except Exception as e:
             logger.error(f"[SocketIO] Error setting turn: {e}")
@@ -165,14 +237,21 @@ def register_game_room_events(socketio, app, shared_state, helpers):
                     return
                 
                 # Clear turn state from database
+                game.current_turn_type = None
                 game.current_turn_user_id = None
                 game.current_turn_character_name = None
+                game.current_turn_npc_id = None
                 session.commit()
                 
                 logger.info(f"[SocketIO] Turn cleared in game {game_id}")
 
             # Broadcast turn clear to everyone
-            emit("turn_update", {"user_id": None, "character_name": None}, room=f"game_{game_id}")
+            emit("turn_update", {
+                "turn_type": None,
+                "user_id": None,
+                "character_name": None,
+                "npc_id": None
+            }, room=f"game_{game_id}")
             
         except Exception as e:
             logger.error(f"[SocketIO] Error clearing turn: {e}")

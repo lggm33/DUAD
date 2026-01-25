@@ -95,7 +95,11 @@ class NPC(Base, IntPrimaryKeyMixin, TimestampMixin):
     )
 
     # Relationships
-    game: Mapped["Game"] = relationship("Game", back_populates="npcs")
+    game: Mapped["Game"] = relationship(
+        "Game",
+        back_populates="npcs",
+        foreign_keys=[game_id]
+    )
     converted_from_character: Mapped["Character | None"] = relationship(
         "Character",
         foreign_keys=[converted_from_character_id],
