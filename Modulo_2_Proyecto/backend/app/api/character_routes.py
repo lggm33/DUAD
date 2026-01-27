@@ -2,16 +2,20 @@
 Character endpoints for player character management.
 """
 
-import uuid
 from flask import Blueprint, request, jsonify, g
-from sqlalchemy.orm.attributes import flag_modified
 
 from app.presentation.common.auth import auth_required
 from app.presentation.common.errors import error_response
 from app.presentation.characters.presenters import CharacterPresenter
 from app.domain.characters.character_service import CharacterService
 from app.domain.characters.character_repository import CharacterRepository
-from app.domain.characters.models import CharacterStatus
+from app.domain.characters.inventory_service import InventoryService
+from app.domain.characters.exceptions import (
+    CharacterNotFoundError,
+    CharacterAccessDeniedError,
+    CharacterNotEditableError,
+    InventoryItemNotFoundError,
+)
 from app.domain.games.game_repository import GameRepository
 from app.domain.games.game_membership_repository import GameMembershipRepository
 from app.domain.users.user_repository import UserRepository
@@ -27,7 +31,21 @@ def get_character_service() -> CharacterService:
     character_repo = CharacterRepository(session)
     game_repo = GameRepository(session)
     membership_repo = GameMembershipRepository(session)
-    return CharacterService(character_repo, game_repo, membership_repo)
+    user_repo = UserRepository(session)
+    event_emitter = CharacterEventEmitter()
+    return CharacterService(
+        character_repo,
+        game_repo,
+        membership_repo,
+        user_repo,
+        event_emitter,
+    )
+
+
+def get_inventory_service() -> InventoryService:
+    session = db.get_session()
+    character_repo = CharacterRepository(session)
+    return InventoryService(character_repo)
 
 
 @character_bp.post("/<int:game_id>/character")
@@ -51,21 +69,10 @@ def create_character(game_id: int):
     """
     data = request.get_json()
 
-    if not data:
+    if not data or not data.get("name"):
         return error_response(
             "VALIDATION_ERROR",
-            "Request body is required",
-            status_code=400,
-        )
-
-    name = data.get("name")
-    character_data = data.get("data", {})
-    submit_for_approval = data.get("submit_for_approval", False)
-
-    if not name or not name.strip():
-        return error_response(
-            "VALIDATION_ERROR",
-            "Character name is required",
+            "Name is required",
             status_code=400,
         )
 
@@ -75,35 +82,16 @@ def create_character(game_id: int):
         character = character_service.create_character(
             game_id=game_id,
             user_id=g.auth_user.user_id,
-            name=name.strip(),
-            data=character_data,
-            submit_for_approval=submit_for_approval,
+            name=data["name"],
+            data=data.get("data", {}),
+            submit_for_approval=data.get("submit_for_approval", False),
         )
-        db.get_session().commit()
-
-        if character.status == CharacterStatus.PENDING_APPROVAL:
-            try:
-                session = db.get_session()
-                user_repo = UserRepository(session)
-                user = user_repo.get_by_id(g.auth_user.user_id)
-                player_name = user.username if user else "Unknown"
-
-                CharacterEventEmitter.emit_character_submitted(
-                    game_id=game_id,
-                    character_id=character.id,
-                    character_name=character.name,
-                    player_name=player_name,
-                    user_id=g.auth_user.user_id,
-                )
-            except Exception as e:
-                import logging
-                logging.error(f"[CharacterRoutes] Failed to emit character:submitted event: {e}")
-
         return jsonify(CharacterPresenter.public(character)), 201
+    except CharacterNotFoundError as e:
+        return error_response("NOT_FOUND", str(e), status_code=404)
+    except CharacterAccessDeniedError as e:
+        return error_response("FORBIDDEN", str(e), status_code=403)
     except ValueError as e:
-        error_msg = str(e).lower()
-        if "not found" in error_msg:
-            return error_response("NOT_FOUND", str(e), status_code=404)
         return error_response("VALIDATION_ERROR", str(e), status_code=400)
 
 
@@ -129,15 +117,10 @@ def get_game_characters(game_id: int):
             game_id=game_id,
             user_id=g.auth_user.user_id,
             include_pending=include_pending,
+            status_filter=status_filter,
         )
-
-        # Apply status filter if provided
-        if status_filter:
-            status_filter = status_filter.upper()
-            characters = [c for c in characters if c.status.value == status_filter]
-
         return jsonify(CharacterPresenter.collection(characters)), 200
-    except ValueError as e:
+    except CharacterAccessDeniedError as e:
         return error_response("FORBIDDEN", str(e), status_code=403)
 
 
@@ -151,26 +134,23 @@ def get_character(game_id: int, character_id: int):
     """
     character_service = get_character_service()
 
-    character = character_service.get_character(
-        character_id=character_id,
-        user_id=g.auth_user.user_id,
-    )
-
-    if not character:
-        return error_response(
-            "CHARACTER_NOT_FOUND",
-            "Character not found or not accessible",
-            status_code=404,
+    try:
+        character_service.verify_character_in_game(character_id, game_id)
+        character = character_service.get_character(
+            character_id=character_id,
+            user_id=g.auth_user.user_id,
         )
 
-    if character.game_id != game_id:
-        return error_response(
-            "CHARACTER_NOT_FOUND",
-            "Character not found in this game",
-            status_code=404,
-        )
+        if not character:
+            return error_response(
+                "CHARACTER_NOT_FOUND",
+                "Character not found or not accessible",
+                status_code=404,
+            )
 
-    return jsonify(CharacterPresenter.public(character)), 200
+        return jsonify(CharacterPresenter.public(character)), 200
+    except CharacterNotFoundError as e:
+        return error_response("CHARACTER_NOT_FOUND", str(e), status_code=404)
 
 
 @character_bp.put("/<int:game_id>/character/<int:character_id>")
@@ -201,10 +181,7 @@ def update_character(game_id: int, character_id: int):
         )
 
     name = data.get("name")
-    character_data = data.get("data")
-    submit_for_approval = data.get("submit_for_approval", False)
-
-    if name is not None and (not name or not name.strip()):
+    if name is not None and not name.strip():
         return error_response(
             "VALIDATION_ERROR",
             "Character name cannot be empty",
@@ -214,49 +191,23 @@ def update_character(game_id: int, character_id: int):
     character_service = get_character_service()
 
     try:
-        # First verify the character belongs to this game
-        character = character_service.get_character(character_id, g.auth_user.user_id)
-        if not character or character.game_id != game_id:
-            return error_response(
-                "CHARACTER_NOT_FOUND",
-                "Character not found in this game",
-                status_code=404,
-            )
-
+        character_service.verify_character_in_game(character_id, game_id)
+        
         updated_character = character_service.update_character(
             character_id=character_id,
             user_id=g.auth_user.user_id,
             name=name.strip() if name else None,
-            data=character_data,
-            submit_for_approval=submit_for_approval,
+            data=data.get("data"),
+            submit_for_approval=data.get("submit_for_approval", False),
         )
-        db.get_session().commit()
-
-        # Emit event if submitted for approval
-        if submit_for_approval and updated_character.status == CharacterStatus.PENDING_APPROVAL:
-            try:
-                session = db.get_session()
-                user_repo = UserRepository(session)
-                user = user_repo.get_by_id(g.auth_user.user_id)
-                player_name = user.username if user else "Unknown"
-
-                CharacterEventEmitter.emit_character_submitted(
-                    game_id=game_id,
-                    character_id=updated_character.id,
-                    character_name=updated_character.name,
-                    player_name=player_name,
-                    user_id=g.auth_user.user_id,
-                )
-            except Exception as e:
-                import logging
-                logging.error(f"[CharacterRoutes] Failed to emit character:submitted event: {e}")
         return jsonify(CharacterPresenter.public(updated_character)), 200
+    except CharacterNotFoundError as e:
+        return error_response("CHARACTER_NOT_FOUND", str(e), status_code=404)
+    except CharacterAccessDeniedError as e:
+        return error_response("FORBIDDEN", str(e), status_code=403)
+    except CharacterNotEditableError as e:
+        return error_response("FORBIDDEN", str(e), status_code=403)
     except ValueError as e:
-        error_msg = str(e).lower()
-        if "not found" in error_msg:
-            return error_response("CHARACTER_NOT_FOUND", str(e), status_code=404)
-        if "cannot be edited" in error_msg or "only update your own" in error_msg:
-            return error_response("FORBIDDEN", str(e), status_code=403)
         return error_response("VALIDATION_ERROR", str(e), status_code=400)
 
 
@@ -277,46 +228,22 @@ def approve_character(game_id: int, character_id: int):
     Returns the approved character.
     """
     data = request.get_json() or {}
-    feedback = data.get("feedback")
-
     character_service = get_character_service()
 
     try:
-        # First verify the character belongs to this game
-        character = character_service.get_character(character_id, g.auth_user.user_id)
-        if not character or character.game_id != game_id:
-            return error_response(
-                "CHARACTER_NOT_FOUND",
-                "Character not found in this game",
-                status_code=404,
-            )
-
+        character_service.verify_character_in_game(character_id, game_id)
+        
         approved_character = character_service.approve_character(
             character_id=character_id,
             dm_user_id=g.auth_user.user_id,
-            feedback=feedback,
+            feedback=data.get("feedback"),
         )
-        db.get_session().commit()
-
-        try:
-            CharacterEventEmitter.emit_character_approved(
-                game_id=game_id,
-                character_id=character_id,
-                character_name=approved_character.name,
-                user_id=approved_character.user_id,
-                feedback=feedback,
-            )
-        except Exception as e:
-            import logging
-            logging.error(f"[CharacterRoutes] Failed to emit character:approved event: {e}")
-
         return jsonify(CharacterPresenter.public(approved_character)), 200
+    except CharacterNotFoundError as e:
+        return error_response("CHARACTER_NOT_FOUND", str(e), status_code=404)
+    except CharacterAccessDeniedError as e:
+        return error_response("FORBIDDEN", str(e), status_code=403)
     except ValueError as e:
-        error_msg = str(e).lower()
-        if "not found" in error_msg:
-            return error_response("CHARACTER_NOT_FOUND", str(e), status_code=404)
-        if "only the dm" in error_msg:
-            return error_response("FORBIDDEN", str(e), status_code=403)
         return error_response("VALIDATION_ERROR", str(e), status_code=400)
 
 
@@ -346,46 +273,22 @@ def reject_character(game_id: int, character_id: int):
             status_code=400,
         )
 
-    feedback = data["feedback"]
-
     character_service = get_character_service()
 
     try:
-        # First verify the character belongs to this game
-        character = character_service.get_character(character_id, g.auth_user.user_id)
-        if not character or character.game_id != game_id:
-            return error_response(
-                "CHARACTER_NOT_FOUND",
-                "Character not found in this game",
-                status_code=404,
-            )
-
+        character_service.verify_character_in_game(character_id, game_id)
+        
         rejected_character = character_service.reject_character(
             character_id=character_id,
             dm_user_id=g.auth_user.user_id,
-            feedback=feedback,
+            feedback=data["feedback"],
         )
-        db.get_session().commit()
-
-        try:
-            CharacterEventEmitter.emit_character_rejected(
-                game_id=game_id,
-                character_id=character_id,
-                character_name=rejected_character.name,
-                user_id=rejected_character.user_id,
-                feedback=feedback,
-            )
-        except Exception as e:
-            import logging
-            logging.error(f"[CharacterRoutes] Failed to emit character:rejected event: {e}")
-
         return jsonify(CharacterPresenter.public(rejected_character)), 200
+    except CharacterNotFoundError as e:
+        return error_response("CHARACTER_NOT_FOUND", str(e), status_code=404)
+    except CharacterAccessDeniedError as e:
+        return error_response("FORBIDDEN", str(e), status_code=403)
     except ValueError as e:
-        error_msg = str(e).lower()
-        if "not found" in error_msg:
-            return error_response("CHARACTER_NOT_FOUND", str(e), status_code=404)
-        if "only the dm" in error_msg:
-            return error_response("FORBIDDEN", str(e), status_code=403)
         return error_response("VALIDATION_ERROR", str(e), status_code=400)
 
 
@@ -407,11 +310,8 @@ def get_pending_characters(game_id: int):
             dm_user_id=g.auth_user.user_id,
         )
         return jsonify(CharacterPresenter.collection(characters)), 200
-    except ValueError as e:
-        error_msg = str(e).lower()
-        if "only the dm" in error_msg:
-            return error_response("FORBIDDEN", str(e), status_code=403)
-        return error_response("VALIDATION_ERROR", str(e), status_code=400)
+    except CharacterAccessDeniedError as e:
+        return error_response("FORBIDDEN", str(e), status_code=403)
 
 
 @character_bp.get("/<int:game_id>/my-character")
@@ -453,52 +353,16 @@ def get_character_inventory(game_id: int, character_id: int):
     Only the character owner can access their inventory.
     """
     character_service = get_character_service()
+    inventory_service = get_inventory_service()
 
-    character = character_service.get_character(
-        character_id=character_id,
-        user_id=g.auth_user.user_id,
-    )
-
-    if not character:
-        return error_response(
-            "CHARACTER_NOT_FOUND",
-            "Character not found or not accessible",
-            status_code=404,
-        )
-
-    if character.game_id != game_id:
-        return error_response(
-            "CHARACTER_NOT_FOUND",
-            "Character not found in this game",
-            status_code=404,
-        )
-
-    # Only the owner can view their inventory
-    if character.user_id != g.auth_user.user_id:
-        return error_response(
-            "FORBIDDEN",
-            "You can only view your own character's inventory",
-            status_code=403,
-        )
-
-    character_data = character.data if character.data else {}
-    inventory = character_data.get("inventory", [])
-    
-    # Validate and sanitize inventory structure
-    valid_inventory = []
-    for item in inventory:
-        if isinstance(item, dict):
-            valid_inventory.append(item)
-        else:
-            # Skip invalid items (legacy data or corrupted entries)
-            print(f"[CharacterRoutes] WARNING: Skipping invalid inventory item: {item}")
-    
-    print(f"[CharacterRoutes] Character.data type: {type(character.data)}")
-    print(f"[CharacterRoutes] Character.data: {character.data}")
-    print(f"[CharacterRoutes] Inventory type: {type(valid_inventory)}")
-    print(f"[CharacterRoutes] Inventory: {valid_inventory}")
-    
-    return jsonify({"inventory": valid_inventory}), 200
+    try:
+        character_service.verify_character_in_game(character_id, game_id)
+        inventory = inventory_service.get_inventory(character_id, g.auth_user.user_id)
+        return jsonify({"inventory": inventory}), 200
+    except CharacterNotFoundError as e:
+        return error_response("CHARACTER_NOT_FOUND", str(e), status_code=404)
+    except CharacterAccessDeniedError as e:
+        return error_response("FORBIDDEN", str(e), status_code=403)
 
 
 @character_bp.post("/<int:game_id>/character/<int:character_id>/inventory")
@@ -518,24 +382,14 @@ def add_inventory_item(game_id: int, character_id: int):
     """
     data = request.get_json()
 
-    if not data:
-        return error_response(
-            "VALIDATION_ERROR",
-            "Request body is required",
-            status_code=400,
-        )
-
-    name = data.get("name")
-    description = data.get("description", "")
-    quantity = data.get("quantity", 1)
-
-    if not name or not name.strip():
+    if not data or not data.get("name"):
         return error_response(
             "VALIDATION_ERROR",
             "Item name is required",
             status_code=400,
         )
 
+    quantity = data.get("quantity", 1)
     if not isinstance(quantity, int) or quantity < 1:
         return error_response(
             "VALIDATION_ERROR",
@@ -544,65 +398,23 @@ def add_inventory_item(game_id: int, character_id: int):
         )
 
     character_service = get_character_service()
+    inventory_service = get_inventory_service()
 
-    character = character_service.get_character(
-        character_id=character_id,
-        user_id=g.auth_user.user_id,
-    )
-
-    if not character:
-        return error_response(
-            "CHARACTER_NOT_FOUND",
-            "Character not found or not accessible",
-            status_code=404,
+    try:
+        character_service.verify_character_in_game(character_id, game_id)
+        
+        item = inventory_service.add_item(
+            character_id=character_id,
+            user_id=g.auth_user.user_id,
+            name=data["name"],
+            description=data.get("description", ""),
+            quantity=quantity,
         )
-
-    if character.game_id != game_id:
-        return error_response(
-            "CHARACTER_NOT_FOUND",
-            "Character not found in this game",
-            status_code=404,
-        )
-
-    # Only the owner can modify their inventory
-    if character.user_id != g.auth_user.user_id:
-        return error_response(
-            "FORBIDDEN",
-            "You can only modify your own character's inventory",
-            status_code=403,
-        )
-
-    # Generate unique ID for the item
-    item_id = str(uuid.uuid4())
-
-    new_item = {
-        "id": item_id,
-        "name": name.strip(),
-        "description": description.strip(),
-        "quantity": quantity,
-    }
-
-    # Get current inventory and add new item
-    character_data = character.data.copy() if character.data else {}
-    inventory = character_data.get("inventory", [])
-    
-    print(f"[CharacterRoutes] Current inventory before append: {inventory}")
-    print(f"[CharacterRoutes] New item to add: {new_item}")
-    
-    inventory.append(new_item)
-    character_data["inventory"] = inventory
-    
-    print(f"[CharacterRoutes] Inventory after append: {inventory}")
-    print(f"[CharacterRoutes] Character data to save: {character_data}")
-
-    # Update character data directly (inventory can be edited regardless of status)
-    character.data = character_data
-    flag_modified(character, "data")
-    db.get_session().commit()
-    
-    print(f"[CharacterRoutes] Character data after commit: {character.data}")
-
-    return jsonify({"item": new_item}), 201
+        return jsonify({"item": item}), 201
+    except CharacterNotFoundError as e:
+        return error_response("CHARACTER_NOT_FOUND", str(e), status_code=404)
+    except CharacterAccessDeniedError as e:
+        return error_response("FORBIDDEN", str(e), status_code=403)
 
 
 @character_bp.put("/<int:game_id>/character/<int:character_id>/inventory/<item_id>")
@@ -630,16 +442,14 @@ def update_inventory_item(game_id: int, character_id: int, item_id: str):
         )
 
     name = data.get("name")
-    description = data.get("description")
-    quantity = data.get("quantity")
-
-    if name is not None and (not name or not name.strip()):
+    if name is not None and not name.strip():
         return error_response(
             "VALIDATION_ERROR",
             "Item name cannot be empty",
             status_code=400,
         )
 
+    quantity = data.get("quantity")
     if quantity is not None and (not isinstance(quantity, int) or quantity < 1):
         return error_response(
             "VALIDATION_ERROR",
@@ -648,77 +458,26 @@ def update_inventory_item(game_id: int, character_id: int, item_id: str):
         )
 
     character_service = get_character_service()
+    inventory_service = get_inventory_service()
 
-    character = character_service.get_character(
-        character_id=character_id,
-        user_id=g.auth_user.user_id,
-    )
-
-    if not character:
-        return error_response(
-            "CHARACTER_NOT_FOUND",
-            "Character not found or not accessible",
-            status_code=404,
+    try:
+        character_service.verify_character_in_game(character_id, game_id)
+        
+        item = inventory_service.update_item(
+            character_id=character_id,
+            user_id=g.auth_user.user_id,
+            item_id=item_id,
+            name=name,
+            description=data.get("description"),
+            quantity=quantity,
         )
-
-    if character.game_id != game_id:
-        return error_response(
-            "CHARACTER_NOT_FOUND",
-            "Character not found in this game",
-            status_code=404,
-        )
-
-    # Only the owner can modify their inventory
-    if character.user_id != g.auth_user.user_id:
-        return error_response(
-            "FORBIDDEN",
-            "You can only modify your own character's inventory",
-            status_code=403,
-        )
-
-    # Find and update the item
-    character_data = character.data.copy() if character.data else {}
-    inventory = character_data.get("inventory", [])
-    
-    # Validate and sanitize inventory structure
-    valid_inventory = []
-    for item in inventory:
-        if isinstance(item, dict):
-            valid_inventory.append(item)
-        else:
-            # Skip invalid items (legacy data or corrupted entries)
-            print(f"[CharacterRoutes] WARNING: Skipping invalid inventory item: {item}")
-    
-    inventory = valid_inventory
-    
-    item_found = False
-    for item in inventory:
-        if item.get("id") == item_id:
-            if name is not None:
-                item["name"] = name.strip()
-            if description is not None:
-                item["description"] = description.strip()
-            if quantity is not None:
-                item["quantity"] = quantity
-            item_found = True
-            updated_item = item
-            break
-
-    if not item_found:
-        return error_response(
-            "ITEM_NOT_FOUND",
-            "Item not found in inventory",
-            status_code=404,
-        )
-
-    character_data["inventory"] = inventory
-
-    # Update character data directly (inventory can be edited regardless of status)
-    character.data = character_data
-    flag_modified(character, "data")
-    db.get_session().commit()
-
-    return jsonify({"item": updated_item}), 200
+        return jsonify({"item": item}), 200
+    except CharacterNotFoundError as e:
+        return error_response("CHARACTER_NOT_FOUND", str(e), status_code=404)
+    except CharacterAccessDeniedError as e:
+        return error_response("FORBIDDEN", str(e), status_code=403)
+    except InventoryItemNotFoundError as e:
+        return error_response("ITEM_NOT_FOUND", str(e), status_code=404)
 
 
 @character_bp.delete("/<int:game_id>/character/<int:character_id>/inventory/<item_id>")
@@ -730,65 +489,21 @@ def delete_inventory_item(game_id: int, character_id: int, item_id: str):
     Returns 204 No Content on success.
     """
     character_service = get_character_service()
+    inventory_service = get_inventory_service()
 
-    character = character_service.get_character(
-        character_id=character_id,
-        user_id=g.auth_user.user_id,
-    )
-
-    if not character:
-        return error_response(
-            "CHARACTER_NOT_FOUND",
-            "Character not found or not accessible",
-            status_code=404,
+    try:
+        character_service.verify_character_in_game(character_id, game_id)
+        
+        inventory_service.delete_item(
+            character_id=character_id,
+            user_id=g.auth_user.user_id,
+            item_id=item_id,
         )
-
-    if character.game_id != game_id:
-        return error_response(
-            "CHARACTER_NOT_FOUND",
-            "Character not found in this game",
-            status_code=404,
-        )
-
-    # Only the owner can modify their inventory
-    if character.user_id != g.auth_user.user_id:
-        return error_response(
-            "FORBIDDEN",
-            "You can only modify your own character's inventory",
-            status_code=403,
-        )
-
-    # Find and remove the item
-    character_data = character.data.copy() if character.data else {}
-    inventory = character_data.get("inventory", [])
-    
-    # Validate and sanitize inventory structure
-    valid_inventory = []
-    for item in inventory:
-        if isinstance(item, dict):
-            valid_inventory.append(item)
-        else:
-            # Skip invalid items (legacy data or corrupted entries)
-            print(f"[CharacterRoutes] WARNING: Skipping invalid inventory item: {item}")
-    
-    inventory = valid_inventory
-    
-    initial_length = len(inventory)
-    inventory = [item for item in inventory if item.get("id") != item_id]
-    
-    if len(inventory) == initial_length:
-        return error_response(
-            "ITEM_NOT_FOUND",
-            "Item not found in inventory",
-            status_code=404,
-        )
-
-    character_data["inventory"] = inventory
-
-    # Update character data directly (inventory can be edited regardless of status)
-    character.data = character_data
-    flag_modified(character, "data")
-    db.get_session().commit()
-
-    return "", 204
+        return "", 204
+    except CharacterNotFoundError as e:
+        return error_response("CHARACTER_NOT_FOUND", str(e), status_code=404)
+    except CharacterAccessDeniedError as e:
+        return error_response("FORBIDDEN", str(e), status_code=403)
+    except InventoryItemNotFoundError as e:
+        return error_response("ITEM_NOT_FOUND", str(e), status_code=404)
 

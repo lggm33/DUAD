@@ -11,10 +11,16 @@ from typing import Any, Optional, TypedDict
 
 from app.domain.characters.models import Character, CharacterStatus
 from app.domain.characters.character_repository import CharacterRepository
+from app.domain.characters.exceptions import (
+    CharacterNotFoundError,
+    CharacterAccessDeniedError,
+    CharacterNotEditableError,
+)
 from app.domain.games.models import Game
 from app.domain.games.game_repository import GameRepository
 from app.domain.games.game_membership_repository import GameMembershipRepository
 from app.domain.games.models import GameMembershipStatus, GameRoleInGame
+from app.domain.users.user_repository import UserRepository
 
 
 class CharacterData(TypedDict, total=False):
@@ -49,10 +55,14 @@ class CharacterService:
         character_repository: CharacterRepository,
         game_repository: GameRepository,
         game_membership_repository: GameMembershipRepository,
+        user_repository: UserRepository,
+        event_emitter: Any,
     ) -> None:
         self._character_repo = character_repository
         self._game_repo = game_repository
         self._membership_repo = game_membership_repository
+        self._user_repo = user_repository
+        self._event_emitter = event_emitter
 
     def create_character(
         self,
@@ -76,13 +86,13 @@ class CharacterService:
             The created character
 
         Raises:
-            ValueError: If game not found
+            CharacterNotFoundError: If game not found
             ValueError: If user already has a character in this game
             ValueError: If user is not a member of the game
         """
         game = self._game_repo.get_game_by_id(game_id)
         if not game:
-            raise ValueError("Game not found")
+            raise CharacterNotFoundError("Game not found")
 
         membership = self._membership_repo.get_game_membership_by_game_id_and_user_id(
             game_id, user_id
@@ -109,7 +119,21 @@ class CharacterService:
             data=data,
         )
 
-        return self._character_repo.create(character)
+        character = self._character_repo.create(character)
+
+        # Emit event if submitted for approval
+        if status == CharacterStatus.PENDING_APPROVAL:
+            user = self._user_repo.get_by_id(user_id)
+            player_name = user.username if user else "Unknown"
+            self._event_emitter.emit_character_submitted(
+                game_id=game_id,
+                character_id=character.id,
+                character_name=character.name,
+                player_name=player_name,
+                user_id=user_id,
+            )
+
+        return character
 
     def update_character(
         self,
@@ -136,18 +160,20 @@ class CharacterService:
             The updated character
 
         Raises:
-            ValueError: If character not found, not owned, or not editable
+            CharacterNotFoundError: If character not found
+            CharacterAccessDeniedError: If not owned by user
+            CharacterNotEditableError: If not editable
         """
         character = self._character_repo.get_by_id(character_id)
 
         if not character:
-            raise ValueError("Character not found")
+            raise CharacterNotFoundError("Character not found")
 
         if character.user_id != user_id:
-            raise ValueError("You can only update your own character")
+            raise CharacterAccessDeniedError("You can only update your own character")
 
         if not character.is_editable():
-            raise ValueError(
+            raise CharacterNotEditableError(
                 f"Character cannot be edited in status: {character.status.value}"
             )
 
@@ -172,6 +198,18 @@ class CharacterService:
             if character.status == CharacterStatus.REJECTED:
                 character.status = CharacterStatus.DRAFT
 
+        # Emit event if submitted for approval
+        if submit_for_approval and character.status == CharacterStatus.PENDING_APPROVAL:
+            user = self._user_repo.get_by_id(user_id)
+            player_name = user.username if user else "Unknown"
+            self._event_emitter.emit_character_submitted(
+                game_id=character.game_id,
+                character_id=character.id,
+                character_name=character.name,
+                player_name=player_name,
+                user_id=user_id,
+            )
+
         return character
 
     def approve_character(
@@ -192,25 +230,36 @@ class CharacterService:
             The approved character
 
         Raises:
-            ValueError: If not authorized or character not pending
+            CharacterNotFoundError: If character not found
+            CharacterAccessDeniedError: If not authorized
+            ValueError: If character not pending
         """
         character = self._character_repo.get_by_id(character_id)
 
         if not character:
-            raise ValueError("Character not found")
+            raise CharacterNotFoundError("Character not found")
 
         # Verify the user is the DM of this game
         membership = self._membership_repo.get_game_membership_by_game_id_and_user_id(
             character.game_id, dm_user_id
         )
         if not membership or membership.role_in_game != GameRoleInGame.DM:
-            raise ValueError("Only the DM can approve characters")
+            raise CharacterAccessDeniedError("Only the DM can approve characters")
 
         if character.status != CharacterStatus.PENDING_APPROVAL:
             raise ValueError("Character is not pending approval")
 
         character.status = CharacterStatus.APPROVED
         character.dm_feedback = feedback
+
+        # Emit event
+        self._event_emitter.emit_character_approved(
+            game_id=character.game_id,
+            character_id=character.id,
+            character_name=character.name,
+            user_id=character.user_id,
+            feedback=feedback,
+        )
 
         return character
 
@@ -232,12 +281,14 @@ class CharacterService:
             The rejected character
 
         Raises:
-            ValueError: If not authorized or character not pending
+            CharacterNotFoundError: If character not found
+            CharacterAccessDeniedError: If not authorized
+            ValueError: If character not pending or feedback missing
         """
         character = self._character_repo.get_by_id(character_id)
 
         if not character:
-            raise ValueError("Character not found")
+            raise CharacterNotFoundError("Character not found")
 
         if not feedback or not feedback.strip():
             raise ValueError("Feedback is required when rejecting a character")
@@ -247,13 +298,22 @@ class CharacterService:
             character.game_id, dm_user_id
         )
         if not membership or membership.role_in_game != GameRoleInGame.DM:
-            raise ValueError("Only the DM can reject characters")
+            raise CharacterAccessDeniedError("Only the DM can reject characters")
 
         if character.status != CharacterStatus.PENDING_APPROVAL:
             raise ValueError("Character is not pending approval")
 
         character.status = CharacterStatus.REJECTED
         character.dm_feedback = feedback.strip()
+
+        # Emit event
+        self._event_emitter.emit_character_rejected(
+            game_id=character.game_id,
+            character_id=character.id,
+            character_name=character.name,
+            user_id=character.user_id,
+            feedback=feedback,
+        )
 
         return character
 
@@ -325,6 +385,7 @@ class CharacterService:
         game_id: int,
         user_id: int,
         include_pending: bool = False,
+        status_filter: Optional[str] = None,
     ) -> list[Character]:
         """
         Get characters in a game visible to the user.
@@ -333,29 +394,41 @@ class CharacterService:
             game_id: The game ID
             user_id: The requesting user ID
             include_pending: Include pending approval (DM only)
+            status_filter: Filter by character status (optional)
 
         Returns:
             List of visible characters
+
+        Raises:
+            CharacterAccessDeniedError: If user is not an active member of the game
         """
         membership = self._membership_repo.get_game_membership_by_game_id_and_user_id(
             game_id, user_id
         )
         if not membership or membership.status != GameMembershipStatus.ACTIVE:
-            return []
+            raise CharacterAccessDeniedError("You must be an active member of the game to view characters")
 
         all_characters = self._character_repo.get_by_game_id(game_id)
 
         # DM can see all characters
         if membership.role_in_game == GameRoleInGame.DM:
             if include_pending:
-                return all_characters
-            return [c for c in all_characters if c.status != CharacterStatus.DRAFT]
+                characters = all_characters
+            else:
+                characters = [c for c in all_characters if c.status != CharacterStatus.DRAFT]
+        else:
+            # Players see their own + approved characters
+            characters = [
+                c for c in all_characters
+                if c.user_id == user_id or c.status == CharacterStatus.APPROVED
+            ]
 
-        # Players see their own + approved characters
-        return [
-            c for c in all_characters
-            if c.user_id == user_id or c.status == CharacterStatus.APPROVED
-        ]
+        # Apply status filter if provided
+        if status_filter:
+            status_filter_upper = status_filter.upper()
+            characters = [c for c in characters if c.status.value == status_filter_upper]
+
+        return characters
 
     def get_pending_characters(self, game_id: int, dm_user_id: int) -> list[Character]:
         """
@@ -369,13 +442,28 @@ class CharacterService:
             List of characters pending approval
 
         Raises:
-            ValueError: If user is not the DM
+            CharacterAccessDeniedError: If user is not the DM
         """
         membership = self._membership_repo.get_game_membership_by_game_id_and_user_id(
             game_id, dm_user_id
         )
         if not membership or membership.role_in_game != GameRoleInGame.DM:
-            raise ValueError("Only the DM can view pending characters")
+            raise CharacterAccessDeniedError("Only the DM can view pending characters")
 
         return self._character_repo.get_pending_approval(game_id)
+
+    def verify_character_in_game(self, character_id: int, game_id: int) -> None:
+        """
+        Verify that a character belongs to a specific game.
+
+        Args:
+            character_id: The character ID
+            game_id: The game ID
+
+        Raises:
+            CharacterNotFoundError: If character not found or doesn't belong to the game
+        """
+        character = self._character_repo.get_by_id(character_id)
+        if not character or character.game_id != game_id:
+            raise CharacterNotFoundError("Character not found in this game")
 

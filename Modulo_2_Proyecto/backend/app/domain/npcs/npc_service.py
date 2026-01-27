@@ -10,6 +10,13 @@ from typing import Any, Optional
 
 from app.domain.npcs.models import NPC, NPCStatus, NPCType
 from app.domain.npcs.npc_repository import NPCRepository
+from app.domain.npcs.exceptions import (
+    NPCNotFoundError,
+    NPCAccessDeniedError,
+    NPCValidationError,
+    NPCStateError,
+)
+from app.domain.games.exceptions import GameNotFoundError
 from app.domain.characters.models import Character, CharacterStatus
 from app.domain.characters.character_repository import CharacterRepository
 from app.domain.games.game_repository import GameRepository
@@ -37,18 +44,28 @@ class NPCService:
     # =========================================================================
 
     def _verify_is_dm(self, game_id: int, user_id: int) -> None:
-        """Verify user is the DM of the game."""
+        """
+        Verify user is the DM of the game.
+        
+        Raises:
+            NPCAccessDeniedError: If user is not the DM
+        """
         membership = self._membership_repo.get_game_membership_by_game_id_and_user_id(
             game_id, user_id
         )
         if not membership or membership.role_in_game != GameRoleInGame.DM:
-            raise ValueError("Only the DM can manage NPCs")
+            raise NPCAccessDeniedError("Only the DM can manage NPCs")
 
     def _verify_game_exists(self, game_id: int) -> None:
-        """Verify game exists."""
+        """
+        Verify game exists.
+        
+        Raises:
+            GameNotFoundError: If game does not exist
+        """
         game = self._game_repo.get_game_by_id(game_id)
         if not game:
-            raise ValueError("Game not found")
+            raise GameNotFoundError("Game not found")
 
     # =========================================================================
     # CRUD Operations
@@ -80,7 +97,8 @@ class NPCService:
             The created NPC
 
         Raises:
-            ValueError: If user is not the DM
+            GameNotFoundError: If game not found
+            NPCAccessDeniedError: If user is not the DM
         """
         self._verify_game_exists(game_id)
         self._verify_is_dm(game_id, dm_user_id)
@@ -100,6 +118,7 @@ class NPCService:
     def update_npc(
         self,
         npc_id: int,
+        game_id: int,
         dm_user_id: int,
         name: Optional[str] = None,
         npc_type: Optional[NPCType] = None,
@@ -113,6 +132,7 @@ class NPCService:
 
         Args:
             npc_id: The NPC ID
+            game_id: The game ID for validation
             dm_user_id: The DM user ID
             name: New name (optional)
             npc_type: New type (optional)
@@ -125,11 +145,12 @@ class NPCService:
             The updated NPC
 
         Raises:
-            ValueError: If NPC not found or user is not the DM
+            NPCNotFoundError: If NPC not found or not in game
+            NPCAccessDeniedError: If user is not the DM
         """
         npc = self._npc_repo.get_by_id(npc_id)
-        if not npc:
-            raise ValueError("NPC not found")
+        if not npc or npc.game_id != game_id:
+            raise NPCNotFoundError("NPC not found")
 
         self._verify_is_dm(npc.game_id, dm_user_id)
 
@@ -148,29 +169,31 @@ class NPCService:
 
         return npc
 
-    def delete_npc(self, npc_id: int, dm_user_id: int) -> bool:
+    def delete_npc(self, npc_id: int, game_id: int, dm_user_id: int) -> bool:
         """
         Delete an NPC.
 
         Args:
             npc_id: The NPC ID
+            game_id: The game ID for validation
             dm_user_id: The DM user ID
 
         Returns:
             True if deleted
 
         Raises:
-            ValueError: If NPC not found or user is not the DM
+            NPCNotFoundError: If NPC not found or not in game
+            NPCAccessDeniedError: If user is not the DM
         """
         npc = self._npc_repo.get_by_id(npc_id)
-        if not npc:
-            raise ValueError("NPC not found")
+        if not npc or npc.game_id != game_id:
+            raise NPCNotFoundError("NPC not found")
 
         self._verify_is_dm(npc.game_id, dm_user_id)
         self._npc_repo.delete(npc)
         return True
 
-    def get_npc(self, npc_id: int, user_id: int) -> Optional[NPC]:
+    def get_npc(self, npc_id: int, game_id: int, user_id: int) -> NPC:
         """
         Get an NPC by ID.
 
@@ -178,21 +201,26 @@ class NPCService:
 
         Args:
             npc_id: The NPC ID
+            game_id: The game ID for validation
             user_id: The requesting user ID
 
         Returns:
-            The NPC if accessible
+            The NPC
+
+        Raises:
+            NPCNotFoundError: If NPC not found or not in game
+            NPCAccessDeniedError: If user is not a member of the game
         """
         npc = self._npc_repo.get_by_id(npc_id)
-        if not npc:
-            return None
+        if not npc or npc.game_id != game_id:
+            raise NPCNotFoundError("NPC not found")
 
         # Verify user is a member of the game
         membership = self._membership_repo.get_game_membership_by_game_id_and_user_id(
             npc.game_id, user_id
         )
         if not membership or membership.status != GameMembershipStatus.ACTIVE:
-            return None
+            raise NPCAccessDeniedError("Access denied to this game")
 
         return npc
 
@@ -214,13 +242,16 @@ class NPCService:
 
         Returns:
             List of NPCs
+
+        Raises:
+            NPCAccessDeniedError: If user is not a member of the game
         """
         # Verify user is a member
         membership = self._membership_repo.get_game_membership_by_game_id_and_user_id(
             game_id, user_id
         )
         if not membership or membership.status != GameMembershipStatus.ACTIVE:
-            return []
+            raise NPCAccessDeniedError("Access denied to this game")
 
         if npc_type:
             return self._npc_repo.get_by_type(game_id, npc_type)
@@ -229,14 +260,19 @@ class NPCService:
         else:
             return self._npc_repo.get_by_game_id(game_id)
 
-    def revive_npc(self, npc_id: int, dm_user_id: int) -> NPC:
-        """Revive a defeated NPC back to active status."""
+    def revive_npc(self, npc_id: int, game_id: int, dm_user_id: int) -> NPC:
+        """
+        Revive a defeated NPC back to active status.
+        
+        Raises:
+            NPCNotFoundError: If NPC not found
+            NPCStateError: If NPC is not in a revivable state
+        """
         npc = self._npc_repo.get_by_id(npc_id)
-        if not npc:
-            raise ValueError("NPC not found")
+        if not npc or npc.game_id != game_id:
+            raise NPCNotFoundError("NPC not found")
 
         if npc.status not in (NPCStatus.DEFEATED, NPCStatus.RETIRED):
-            raise ValueError("NPC is not defeated or retired")
+            raise NPCStateError("NPC is not defeated or retired")
 
-        return self.update_npc(npc_id, dm_user_id, status=NPCStatus.ACTIVE)
-
+        return self.update_npc(npc_id, game_id, dm_user_id, status=NPCStatus.ACTIVE)

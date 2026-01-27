@@ -17,6 +17,8 @@ from app.domain.characters.models import CharacterStatus
 from app.domain.games.game_repository import GameRepository
 from app.domain.games.game_membership_repository import GameMembershipRepository
 from app.domain.games.models import TurnType
+from app.domain.users.user_repository import UserRepository
+from app.realtime.character_events import CharacterEventEmitter
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +57,15 @@ def register_chat_events(socketio, app, shared_state, helpers):
                 character_repo = CharacterRepository(session)
                 game_repo = GameRepository(session)
                 membership_repo = GameMembershipRepository(session)
-                character_service = CharacterService(character_repo, game_repo, membership_repo)
+                user_repo = UserRepository(session)
+                event_emitter = CharacterEventEmitter()
+                character_service = CharacterService(
+                    character_repo, 
+                    game_repo, 
+                    membership_repo,
+                    user_repo,
+                    event_emitter
+                )
                 character = character_service.get_user_approved_character_in_game(game_id, user["user_id"])
                 # Use character name if approved character exists
                 character_name = character.name if character else None
