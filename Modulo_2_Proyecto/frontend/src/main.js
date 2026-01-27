@@ -1,5 +1,6 @@
 import './styles/index.css'
 import './styles/app.css'
+import './styles/inventory.css'
 import { 
   registerRoute, 
   registerProtectedRoute, 
@@ -14,6 +15,7 @@ import { dashboardPage } from './pages/dashboard.js'
 import { gamePage } from './pages/game.js'
 import { joinPage } from './pages/join.js'
 import { historyPage } from './pages/history.js'
+import { inventoryPage } from './pages/inventory.js'
 
 const app = document.querySelector('#app')
 
@@ -30,6 +32,7 @@ registerProtectedRoute('/dashboard', () => dashboardPage(app))
 // Dynamic protected routes
 registerDynamicProtectedRoute('/game/:id', () => gamePage(app))
 registerDynamicProtectedRoute('/game/:id/history', () => historyPage(app))
+registerDynamicProtectedRoute('/game/:id/inventory', () => inventoryPage(app))
 registerDynamicProtectedRoute('/join/:code', () => joinPage(app))
 
 // 404 fallback

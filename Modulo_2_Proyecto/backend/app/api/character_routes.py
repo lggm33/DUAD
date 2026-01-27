@@ -2,7 +2,9 @@
 Character endpoints for player character management.
 """
 
+import uuid
 from flask import Blueprint, request, jsonify, g
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.presentation.common.auth import auth_required
 from app.presentation.common.errors import error_response
@@ -435,4 +437,358 @@ def get_my_character(game_id: int):
         )
 
     return jsonify(CharacterPresenter.public(character)), 200
+
+
+# ============================================================================
+# INVENTORY ENDPOINTS
+# ============================================================================
+
+@character_bp.get("/<int:game_id>/character/<int:character_id>/inventory")
+@auth_required
+def get_character_inventory(game_id: int, character_id: int):
+    """
+    Get all inventory items for a character.
+
+    Returns the inventory array from the character's data field.
+    Only the character owner can access their inventory.
+    """
+    character_service = get_character_service()
+
+    character = character_service.get_character(
+        character_id=character_id,
+        user_id=g.auth_user.user_id,
+    )
+
+    if not character:
+        return error_response(
+            "CHARACTER_NOT_FOUND",
+            "Character not found or not accessible",
+            status_code=404,
+        )
+
+    if character.game_id != game_id:
+        return error_response(
+            "CHARACTER_NOT_FOUND",
+            "Character not found in this game",
+            status_code=404,
+        )
+
+    # Only the owner can view their inventory
+    if character.user_id != g.auth_user.user_id:
+        return error_response(
+            "FORBIDDEN",
+            "You can only view your own character's inventory",
+            status_code=403,
+        )
+
+    character_data = character.data if character.data else {}
+    inventory = character_data.get("inventory", [])
+    
+    # Validate and sanitize inventory structure
+    valid_inventory = []
+    for item in inventory:
+        if isinstance(item, dict):
+            valid_inventory.append(item)
+        else:
+            # Skip invalid items (legacy data or corrupted entries)
+            print(f"[CharacterRoutes] WARNING: Skipping invalid inventory item: {item}")
+    
+    print(f"[CharacterRoutes] Character.data type: {type(character.data)}")
+    print(f"[CharacterRoutes] Character.data: {character.data}")
+    print(f"[CharacterRoutes] Inventory type: {type(valid_inventory)}")
+    print(f"[CharacterRoutes] Inventory: {valid_inventory}")
+    
+    return jsonify({"inventory": valid_inventory}), 200
+
+
+@character_bp.post("/<int:game_id>/character/<int:character_id>/inventory")
+@auth_required
+def add_inventory_item(game_id: int, character_id: int):
+    """
+    Add a new item to the character's inventory.
+
+    Request body:
+    {
+        "name": "Item Name",
+        "description": "Item description",
+        "quantity": 1
+    }
+
+    Returns the created item with its generated ID.
+    """
+    data = request.get_json()
+
+    if not data:
+        return error_response(
+            "VALIDATION_ERROR",
+            "Request body is required",
+            status_code=400,
+        )
+
+    name = data.get("name")
+    description = data.get("description", "")
+    quantity = data.get("quantity", 1)
+
+    if not name or not name.strip():
+        return error_response(
+            "VALIDATION_ERROR",
+            "Item name is required",
+            status_code=400,
+        )
+
+    if not isinstance(quantity, int) or quantity < 1:
+        return error_response(
+            "VALIDATION_ERROR",
+            "Quantity must be a positive integer",
+            status_code=400,
+        )
+
+    character_service = get_character_service()
+
+    character = character_service.get_character(
+        character_id=character_id,
+        user_id=g.auth_user.user_id,
+    )
+
+    if not character:
+        return error_response(
+            "CHARACTER_NOT_FOUND",
+            "Character not found or not accessible",
+            status_code=404,
+        )
+
+    if character.game_id != game_id:
+        return error_response(
+            "CHARACTER_NOT_FOUND",
+            "Character not found in this game",
+            status_code=404,
+        )
+
+    # Only the owner can modify their inventory
+    if character.user_id != g.auth_user.user_id:
+        return error_response(
+            "FORBIDDEN",
+            "You can only modify your own character's inventory",
+            status_code=403,
+        )
+
+    # Generate unique ID for the item
+    item_id = str(uuid.uuid4())
+
+    new_item = {
+        "id": item_id,
+        "name": name.strip(),
+        "description": description.strip(),
+        "quantity": quantity,
+    }
+
+    # Get current inventory and add new item
+    character_data = character.data.copy() if character.data else {}
+    inventory = character_data.get("inventory", [])
+    
+    print(f"[CharacterRoutes] Current inventory before append: {inventory}")
+    print(f"[CharacterRoutes] New item to add: {new_item}")
+    
+    inventory.append(new_item)
+    character_data["inventory"] = inventory
+    
+    print(f"[CharacterRoutes] Inventory after append: {inventory}")
+    print(f"[CharacterRoutes] Character data to save: {character_data}")
+
+    # Update character data directly (inventory can be edited regardless of status)
+    character.data = character_data
+    flag_modified(character, "data")
+    db.get_session().commit()
+    
+    print(f"[CharacterRoutes] Character data after commit: {character.data}")
+
+    return jsonify({"item": new_item}), 201
+
+
+@character_bp.put("/<int:game_id>/character/<int:character_id>/inventory/<item_id>")
+@auth_required
+def update_inventory_item(game_id: int, character_id: int, item_id: str):
+    """
+    Update an existing inventory item.
+
+    Request body:
+    {
+        "name": "Updated Name",  // optional
+        "description": "Updated description",  // optional
+        "quantity": 2  // optional
+    }
+
+    Returns the updated item.
+    """
+    data = request.get_json()
+
+    if not data:
+        return error_response(
+            "VALIDATION_ERROR",
+            "Request body is required",
+            status_code=400,
+        )
+
+    name = data.get("name")
+    description = data.get("description")
+    quantity = data.get("quantity")
+
+    if name is not None and (not name or not name.strip()):
+        return error_response(
+            "VALIDATION_ERROR",
+            "Item name cannot be empty",
+            status_code=400,
+        )
+
+    if quantity is not None and (not isinstance(quantity, int) or quantity < 1):
+        return error_response(
+            "VALIDATION_ERROR",
+            "Quantity must be a positive integer",
+            status_code=400,
+        )
+
+    character_service = get_character_service()
+
+    character = character_service.get_character(
+        character_id=character_id,
+        user_id=g.auth_user.user_id,
+    )
+
+    if not character:
+        return error_response(
+            "CHARACTER_NOT_FOUND",
+            "Character not found or not accessible",
+            status_code=404,
+        )
+
+    if character.game_id != game_id:
+        return error_response(
+            "CHARACTER_NOT_FOUND",
+            "Character not found in this game",
+            status_code=404,
+        )
+
+    # Only the owner can modify their inventory
+    if character.user_id != g.auth_user.user_id:
+        return error_response(
+            "FORBIDDEN",
+            "You can only modify your own character's inventory",
+            status_code=403,
+        )
+
+    # Find and update the item
+    character_data = character.data.copy() if character.data else {}
+    inventory = character_data.get("inventory", [])
+    
+    # Validate and sanitize inventory structure
+    valid_inventory = []
+    for item in inventory:
+        if isinstance(item, dict):
+            valid_inventory.append(item)
+        else:
+            # Skip invalid items (legacy data or corrupted entries)
+            print(f"[CharacterRoutes] WARNING: Skipping invalid inventory item: {item}")
+    
+    inventory = valid_inventory
+    
+    item_found = False
+    for item in inventory:
+        if item.get("id") == item_id:
+            if name is not None:
+                item["name"] = name.strip()
+            if description is not None:
+                item["description"] = description.strip()
+            if quantity is not None:
+                item["quantity"] = quantity
+            item_found = True
+            updated_item = item
+            break
+
+    if not item_found:
+        return error_response(
+            "ITEM_NOT_FOUND",
+            "Item not found in inventory",
+            status_code=404,
+        )
+
+    character_data["inventory"] = inventory
+
+    # Update character data directly (inventory can be edited regardless of status)
+    character.data = character_data
+    flag_modified(character, "data")
+    db.get_session().commit()
+
+    return jsonify({"item": updated_item}), 200
+
+
+@character_bp.delete("/<int:game_id>/character/<int:character_id>/inventory/<item_id>")
+@auth_required
+def delete_inventory_item(game_id: int, character_id: int, item_id: str):
+    """
+    Delete an item from the character's inventory.
+
+    Returns 204 No Content on success.
+    """
+    character_service = get_character_service()
+
+    character = character_service.get_character(
+        character_id=character_id,
+        user_id=g.auth_user.user_id,
+    )
+
+    if not character:
+        return error_response(
+            "CHARACTER_NOT_FOUND",
+            "Character not found or not accessible",
+            status_code=404,
+        )
+
+    if character.game_id != game_id:
+        return error_response(
+            "CHARACTER_NOT_FOUND",
+            "Character not found in this game",
+            status_code=404,
+        )
+
+    # Only the owner can modify their inventory
+    if character.user_id != g.auth_user.user_id:
+        return error_response(
+            "FORBIDDEN",
+            "You can only modify your own character's inventory",
+            status_code=403,
+        )
+
+    # Find and remove the item
+    character_data = character.data.copy() if character.data else {}
+    inventory = character_data.get("inventory", [])
+    
+    # Validate and sanitize inventory structure
+    valid_inventory = []
+    for item in inventory:
+        if isinstance(item, dict):
+            valid_inventory.append(item)
+        else:
+            # Skip invalid items (legacy data or corrupted entries)
+            print(f"[CharacterRoutes] WARNING: Skipping invalid inventory item: {item}")
+    
+    inventory = valid_inventory
+    
+    initial_length = len(inventory)
+    inventory = [item for item in inventory if item.get("id") != item_id]
+    
+    if len(inventory) == initial_length:
+        return error_response(
+            "ITEM_NOT_FOUND",
+            "Item not found in inventory",
+            status_code=404,
+        )
+
+    character_data["inventory"] = inventory
+
+    # Update character data directly (inventory can be edited regardless of status)
+    character.data = character_data
+    flag_modified(character, "data")
+    db.get_session().commit()
+
+    return "", 204
 

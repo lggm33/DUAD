@@ -678,6 +678,14 @@ function renderCharacterSection(character) {
           </h2>
         </div>
         <div class="section-header-right">
+          <button id="view-inventory-btn" class="btn btn-ghost btn-sm" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 7h-9a2 2 0 0 1-2-2V2"></path>
+              <path d="M9 2v3a2 2 0 0 0 2 2h9"></path>
+              <path d="M3 7v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7"></path>
+            </svg>
+            Inventory
+          </button>
           <button id="view-full-sheet-btn" class="btn btn-ghost btn-sm" type="button">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -740,6 +748,14 @@ function renderCharacterSection(character) {
   const editBtn = document.getElementById('edit-character-btn')
   if (editBtn) {
     editBtn.addEventListener('click', () => openCharacterCreator())
+  }
+
+  // Setup inventory button
+  const inventoryBtn = document.getElementById('view-inventory-btn')
+  if (inventoryBtn) {
+    inventoryBtn.addEventListener('click', () => {
+      navigate(`/game/${currentGame.id}/inventory`)
+    })
   }
 
   // Setup view full sheet button
