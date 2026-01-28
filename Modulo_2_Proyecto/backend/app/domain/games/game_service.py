@@ -310,26 +310,13 @@ class GameService:
 
     def get_games(self, user: AuthUser) -> list[GameWithRole]:
         """
-        Get games based on user role.
-        ADMIN can see all games (with DM role since they have full access).
-        Regular users can only see games they are or were members of.
+        Get games where the user is a member.
+        Both ADMIN and regular users see only games they are members of.
         Returns games with the user's role in each game.
         Includes invite_code only for DM users.
+        
+        Note: For admin panel use admin_list_games_with_filters instead.
         """
-        if user.role == UserRole.ADMIN.value:
-            games = self._game_repository.get_games()
-            if not games:
-                return []
-            return [
-                GameWithRole(
-                    game=game,
-                    role_in_game=GameRoleInGame.DM,
-                    membership_status=GameMembershipStatus.ACTIVE,
-                    invite_code=self._get_active_invite_code(game),
-                )
-                for game in games
-            ]
-
         memberships = self._game_membership_repository.get_game_memberships_by_user_id(user.user_id)
         if not memberships:
             return []

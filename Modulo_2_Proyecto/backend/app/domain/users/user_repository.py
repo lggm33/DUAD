@@ -19,6 +19,38 @@ class UserRepository:
         """
         self._session = session
 
+    def create_user(
+        self,
+        email: str,
+        password_hash: str,
+        name: str,
+        username: Optional[str] = None,
+        role: UserRole = UserRole.USER,
+    ) -> User:
+        """
+        Create a new user.
+
+        Args:
+            email: User's email address
+            password_hash: Hashed password
+            name: User's full name
+            username: User's username (optional)
+            role: User's role (defaults to PLAYER)
+
+        Returns:
+            The newly created User instance
+        """
+        user = User(
+            email=email,
+            password_hash=password_hash,
+            name=name,
+            username=username,
+            role=role,
+        )
+        self._session.add(user)
+        self._session.flush()
+        return user
+
     def get_by_email(self, email: str) -> Optional[User]:
         """
         Find a user by their email address.
