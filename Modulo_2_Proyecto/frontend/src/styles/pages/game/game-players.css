@@ -1,0 +1,163 @@
+/* ========================================
+   Players System
+   Players list, cards, badges, and management
+   ======================================== */
+
+/* ========================================
+   Players Section
+   ======================================== */
+.players-section {
+  border-left: 3px solid var(--color-turquoise);
+}
+
+.players-count {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  background: var(--color-bg-elevated);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-full);
+}
+
+.players-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-xl);
+  color: var(--color-text-muted);
+}
+
+.players-loading[hidden] {
+  display: none;
+}
+
+.players-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-md);
+}
+
+.players-list[hidden] {
+  display: none;
+}
+
+/* ========================================
+   Player Cards
+   ======================================== */
+.player-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  transition: all var(--transition-base);
+}
+
+.player-card:hover {
+  border-color: var(--color-cyan-dark);
+}
+
+.player-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-navy-light) 100%);
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  color: var(--color-cyan);
+  font-size: 0.875rem;
+}
+
+.player-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.player-badges {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.player-name {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.player-card-inactive {
+  opacity: 0.6;
+}
+
+/* ========================================
+   Player Badges
+   ======================================== */
+.player-role {
+  font-size: 0.75rem;
+  padding: 2px var(--space-xs);
+  border-radius: var(--radius-sm);
+  width: fit-content;
+}
+
+.player-role.role-dm {
+  background: rgba(34, 211, 238, 0.15);
+  color: var(--color-cyan);
+}
+
+.player-role.role-player {
+  background: rgba(20, 184, 166, 0.15);
+  color: var(--color-turquoise);
+}
+
+.player-status-badge {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+}
+
+.player-status-badge.status-you {
+  background: rgba(34, 211, 238, 0.1);
+  color: var(--color-cyan);
+}
+
+.player-membership-status {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 2px var(--space-xs);
+  border-radius: var(--radius-sm);
+  width: fit-content;
+}
+
+.player-membership-status.status-left {
+  background: rgba(100, 116, 139, 0.15);
+  color: var(--color-text-muted);
+}
+
+.player-membership-status.status-kicked {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-error);
+}
+
+/* ========================================
+   Player Actions (DM)
+   ======================================== */
+.btn-kick {
+  padding: var(--space-xs);
+  color: var(--color-error);
+  transition: all var(--transition-fast);
+}
+
+.btn-kick:hover {
+  color: #fff;
+  background: var(--color-error);
+}

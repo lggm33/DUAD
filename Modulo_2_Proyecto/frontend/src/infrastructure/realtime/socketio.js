@@ -270,13 +270,6 @@ export class SocketIOClient {
       if (handler) handler(data)
     })
 
-    // Turn management events
-    this.socket.on('turn_update', (data) => {
-      console.log('[SocketIO] Turn update:', data)
-      const handler = this.eventHandlers.get('turn_update')
-      if (handler) handler(data)
-    })
-
     // Re-register custom handlers
     const builtInEvents = [
       'joined_game',
@@ -284,7 +277,6 @@ export class SocketIOClient {
       'user_left',
       'chat_message',
       'error',
-      'turn_update',
     ]
     for (const [eventType, handler] of this.eventHandlers) {
       if (!builtInEvents.includes(eventType)) {

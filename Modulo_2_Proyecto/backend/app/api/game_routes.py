@@ -7,21 +7,12 @@ Provides REST API for game management including:
 - Game messages and chat
 - Game rules management
 """
-
-# ============================================================================
-# IMPORTS - Organized by type
-# ============================================================================
-
-# 1. Standard library imports
 from typing import Optional
 
-# 2. Third-party imports
 from flask import Blueprint, request, jsonify, g
 
-# 3. Application extensions
 from app.extensions import db
 
-# 4. Domain layer (repositories, services, models, exceptions)
 from app.domain.games.game_repository import GameRepository
 from app.domain.games.game_invites_repository import GameInvitesRepository
 from app.domain.games.game_membership_repository import GameMembershipRepository
@@ -42,24 +33,14 @@ from app.domain.users.user_repository import UserRepository
 from app.domain.chat.chat_repository import ChatRepository
 from app.domain.chat.chat_service import ChatService
 
-# 5. Presentation layer (presenters, validators)
 from app.presentation.games.presenters import GamePresenter
 from app.presentation.games.ruleset_presenters import GameRulesPresenter
 
-# 6. Common utilities
 from app.presentation.common.auth import auth_required, roles_required
 from app.presentation.common.errors import error_response
 
-# ============================================================================
-# BLUEPRINT DEFINITION
-# ============================================================================
-
 game_bp = Blueprint("game", __name__, url_prefix="/api/v1/game")
 
-
-# ============================================================================
-# SERVICE FACTORIES
-# ============================================================================
 
 def get_game_service() -> GameService:
     """

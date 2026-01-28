@@ -1,0 +1,240 @@
+/* ========================================
+   Modals System - Base
+   Modal overlays, leave game modal, and pending characters
+   (Character review modal is in game-character-review-modal.css)
+   ======================================== */
+
+/* ========================================
+   Modal Overlay Base
+   ======================================== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-overlay[hidden] {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-container {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+  max-width: 420px;
+  width: 90%;
+  animation: modalSlideIn 0.25s ease-out;
+  box-shadow: var(--shadow-lg);
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ========================================
+   Modal Header Base
+   ======================================== */
+.modal-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.modal-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-full);
+}
+
+.modal-icon-warning {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-error);
+}
+
+.modal-icon-dm {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--color-warning);
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  margin: 0;
+  text-align: center;
+}
+
+.modal-message {
+  text-align: center;
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-xl) 0;
+  line-height: 1.6;
+}
+
+.modal-message strong {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+.modal-actions {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: center;
+}
+
+.modal-actions .btn {
+  min-width: 120px;
+}
+
+.btn-danger-solid {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  color: white;
+  border-color: var(--color-error);
+  font-weight: 600;
+}
+
+.btn-danger-solid:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-danger-solid:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-danger-solid .btn-loader {
+  border-color: rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+}
+
+.modal-actions .btn [hidden] {
+  display: none;
+}
+
+/* ========================================
+   Pending Characters Card (DM)
+   ======================================== */
+.dm-control-card-pending {
+  grid-column: 1 / -1;
+}
+
+.dm-control-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+}
+
+.dm-control-card-header h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin: 0;
+}
+
+.pending-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 var(--space-xs);
+  background: linear-gradient(135deg, var(--color-cyan) 0%, var(--color-magenta) 100%);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-bg);
+}
+
+.pending-characters-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+.pending-character-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  transition: all var(--transition-fast);
+}
+
+.pending-character-item:hover {
+  border-color: var(--color-cyan);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.pending-character-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.pending-character-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-cyan) 0%, var(--color-magenta) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-bg);
+}
+
+.pending-character-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.pending-character-name {
+  font-weight: 500;
+  font-size: 0.9375rem;
+  color: var(--color-text);
+}
+
+.pending-character-meta {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.btn-review {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}

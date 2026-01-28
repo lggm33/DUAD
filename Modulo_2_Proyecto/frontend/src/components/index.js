@@ -9,7 +9,7 @@ export { showConfirmModal } from './confirm-modal.js'
 export { GameChat } from './game-chat.js'
 export { CharacterCreator } from './character-creator.js'
 export { CharacterSheet } from './character-sheet.js'
-export { NPCManager } from './npc-manager.js'
+export { NPCManager } from './npc-manager/index.js'
 export { ReconnectOverlay } from './reconnect-overlay.js'
 export { GameCreator } from './game-creator/index.js'
 

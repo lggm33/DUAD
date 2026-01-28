@@ -1,0 +1,330 @@
+/* ========================================
+   Character Review Modal
+   Complete modal for DM character review and approval
+   ======================================== */
+
+/* ========================================
+   Modal Container
+   ======================================== */
+
+/* Fix modal when inside modal-overlay */
+.modal-overlay .modal {
+  position: relative;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 0;
+  animation: modalSlideIn 0.25s ease-out;
+  box-shadow: var(--shadow-lg);
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.character-review-modal {
+  max-width: 600px;
+  width: 90%;
+}
+
+/* ========================================
+   Modal Structure
+   ======================================== */
+.character-review-modal .modal-header {
+  padding: var(--space-lg) var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.character-review-modal .modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.character-review-modal .modal-close {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: var(--space-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.character-review-modal .modal-close:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text);
+}
+
+.character-review-modal .modal-body {
+  padding: var(--space-lg) var(--space-md);
+  flex: 1;
+  overflow-y: auto;
+}
+
+.character-review-modal .modal-footer {
+  padding: var(--space-lg) var(--space-md);
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+/* ========================================
+   Review Character Header
+   ======================================== */
+.review-character-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.review-character-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-cyan) 0%, var(--color-magenta) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-bg);
+  flex-shrink: 0;
+}
+
+.review-character-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.review-character-title h3 {
+  margin: 0 0 var(--space-xs) 0;
+  font-size: 1.375rem;
+  font-weight: 600;
+}
+
+.review-character-subtitle {
+  color: var(--color-text-muted);
+  font-size: 1rem;
+}
+
+/* ========================================
+   Review Sections
+   ======================================== */
+.review-section {
+  margin-bottom: var(--space-lg);
+}
+
+.review-section h4 {
+  margin: 0 0 var(--space-sm) 0;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.review-modal-scrollable {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* ========================================
+   Character Stats Grid
+   ======================================== */
+.review-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--space-sm);
+}
+
+.review-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md) var(--space-sm);
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  min-height: 90px;
+}
+
+.review-stat-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.review-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-cyan);
+  margin-bottom: 2px;
+}
+
+.review-stat-mod {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+/* ========================================
+   Character Info Boxes
+   ======================================== */
+.review-info-box {
+  padding: var(--space-md) var(--space-lg);
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.review-description-box {
+  padding: var(--space-md) var(--space-lg);
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-style: italic;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  max-height: 150px;
+  overflow-y: auto;
+  font-size: 0.9375rem;
+}
+
+.review-description {
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* ========================================
+   Character Metadata
+   ======================================== */
+.review-metadata {
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.review-meta-grid {
+  display: flex;
+  gap: var(--space-xl);
+}
+
+.review-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.review-meta-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.review-meta-value {
+  font-size: 0.875rem;
+  color: var(--color-text);
+}
+
+/* ========================================
+   Skills Display
+   ======================================== */
+.review-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.review-skill-tag {
+  padding: var(--space-xs) var(--space-md);
+  background: rgba(var(--color-cyan-rgb), 0.1);
+  border: 1px solid rgba(var(--color-cyan-rgb), 0.3);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-cyan);
+}
+
+/* ========================================
+   Feedback Section
+   ======================================== */
+.review-feedback-section {
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.review-feedback-input {
+  width: 100%;
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  resize: vertical;
+  transition: border-color var(--transition-fast);
+}
+
+.review-feedback-input:focus {
+  outline: none;
+  border-color: var(--color-cyan);
+}
+
+.review-feedback-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* ========================================
+   Review Actions
+   ======================================== */
+.review-actions {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.review-actions .btn {
+  padding: var(--space-sm) var(--space-lg);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.btn-warning {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.btn-warning:hover {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: #f59e0b;
+}
+
+.btn-danger {
+  color: #ef4444 !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: #ef4444 !important;
+}

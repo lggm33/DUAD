@@ -1,0 +1,271 @@
+/* ========================================
+   Character System
+   Character cards, stats, status banners, and states
+   ======================================== */
+
+/* ========================================
+   Character Section
+   ======================================== */
+.character-section {
+  border-left: 3px solid var(--color-cyan);
+}
+
+/* ========================================
+   Character Status Badges
+   ======================================== */
+.character-status-badge {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+}
+
+.character-status-badge.status-draft {
+  background: rgba(100, 116, 139, 0.15);
+  color: var(--color-text-muted);
+}
+
+.character-status-badge.status-pending {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--color-warning);
+}
+
+.character-status-badge.status-approved {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--color-success);
+}
+
+.character-status-badge.status-rejected {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-error);
+}
+
+.character-status-badge.status-converted {
+  background: rgba(139, 92, 246, 0.15);
+  color: #8b5cf6;
+}
+
+/* ========================================
+   Character Card
+   ======================================== */
+.character-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-bg-elevated) 100%);
+  border: 1px solid var(--color-cyan-dark);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+}
+
+.character-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  min-width: 64px;
+  background: linear-gradient(135deg, var(--color-cyan-dark) 0%, var(--color-navy) 100%);
+  border: 2px solid var(--color-cyan);
+  border-radius: var(--radius-full);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-cyan);
+}
+
+.character-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.character-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 var(--space-xs) 0;
+  color: var(--color-text);
+}
+
+.character-details {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.character-feedback {
+  margin-top: var(--space-sm);
+  padding: var(--space-sm);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
+
+.character-feedback strong {
+  color: var(--color-error);
+}
+
+/* ========================================
+   Character Stats
+   ======================================== */
+.character-stats {
+  display: flex;
+  gap: var(--space-lg);
+}
+
+.character-stat {
+  text-align: center;
+}
+
+.character-stat-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-cyan);
+}
+
+.character-stat-label {
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ========================================
+   No Character State
+   ======================================== */
+.character-section-empty {
+  border-left-color: var(--color-text-muted);
+}
+
+.no-character-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-2xl);
+  text-align: center;
+}
+
+.no-character-icon {
+  color: var(--color-cyan);
+  opacity: 0.6;
+}
+
+.no-character-card h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  color: var(--color-text);
+}
+
+.no-character-card p {
+  margin: 0;
+  max-width: 360px;
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+}
+
+/* ========================================
+   Character Status Banners
+   ======================================== */
+.character-status-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-md);
+}
+
+.character-status-banner .banner-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+}
+
+.character-status-banner .banner-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.character-status-banner .banner-title {
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.character-status-banner .banner-text {
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
+
+.character-status-banner .banner-feedback {
+  margin-top: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+}
+
+/* Banner States */
+.banner-pending {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.1) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.banner-pending .banner-icon {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+}
+
+.banner-pending .banner-title {
+  color: #fbbf24;
+}
+
+.banner-rejected {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.1) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.banner-rejected .banner-icon {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.banner-rejected .banner-title {
+  color: #f87171;
+}
+
+.banner-draft {
+  background: linear-gradient(135deg, rgba(148, 163, 184, 0.15) 0%, rgba(100, 116, 139, 0.1) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.banner-draft .banner-icon {
+  background: rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+}
+
+.banner-draft .banner-title {
+  color: #cbd5e1;
+}
+
+.banner-approved {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(22, 163, 74, 0.1) 100%);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.banner-approved .banner-icon {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.banner-approved .banner-title {
+  color: #4ade80;
+}
