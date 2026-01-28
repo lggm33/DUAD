@@ -65,6 +65,47 @@ class ChatService:
         """
         return self._chat_repository.get_by_game(game_id, limit)
 
+    def get_filtered_messages_for_user(
+        self, 
+        messages: list[ChatMessage], 
+        user_id: int, 
+        dm_user_id: int
+    ) -> list[ChatMessage]:
+        """
+        Filter messages based on user permissions and privacy rules.
+        
+        Privacy rules:
+        - System and regular messages: visible to all
+        - DM's dice rolls: only visible to DM
+        - Player's dice rolls: visible to player and DM
+        
+        Args:
+            messages: List of messages to filter
+            user_id: ID of the user viewing the messages
+            dm_user_id: ID of the game's DM
+            
+        Returns:
+            Filtered list of messages
+        """
+        is_dm = user_id == dm_user_id
+        filtered_messages = []
+        
+        for msg in messages:
+            if msg.message_type == "dice":
+                # DM's dice rolls are only for the DM
+                if msg.user_id == dm_user_id:
+                    if is_dm:
+                        filtered_messages.append(msg)
+                # Player's dice rolls are for the player and the DM
+                else:
+                    if is_dm or msg.user_id == user_id:
+                        filtered_messages.append(msg)
+            else:
+                # Regular and system messages are for everyone
+                filtered_messages.append(msg)
+        
+        return filtered_messages
+
     def message_to_dict(self, message: ChatMessage) -> ChatMessageData:
         """
         Convert a ChatMessage to a dictionary for JSON serialization.

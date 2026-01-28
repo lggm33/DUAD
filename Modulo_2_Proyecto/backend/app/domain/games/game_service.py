@@ -27,6 +27,16 @@ from app.domain.games.game_repository import GameRepository
 from app.domain.games.game_invites_repository import GameInvitesRepository
 from app.domain.games.game_membership_repository import GameMembershipRepository
 from app.domain.games.ruleset_repository import RulesetRepository
+from app.domain.games.exceptions import (
+    GameNotFoundError,
+    GameAccessDeniedError,
+    GameValidationError,
+    GameStateError,
+    GameInviteError,
+    GameMembershipError,
+    RulesetNotFoundError,
+    RulesetAccessDeniedError,
+)
 from app.domain.users.user_repository import UserRepository
 from app.domain.auth.models import AuthUser
 from app.domain.users.models import UserRole
@@ -86,7 +96,7 @@ class GameService:
 
         # Verify DM user exists
         if not self._user_repository.get_by_id(dm_user_id):
-            raise ValueError("DM user not found")
+            raise GameValidationError("DM user not found")
 
         # Verify DM user is not already a DM of another active game
         # existing_game = self._game_repository.get_game_by_dm_user_id(dm_user_id)
@@ -97,17 +107,17 @@ class GameService:
         # Validate ruleset template if provided
 
         if ruleset_template_id is None:
-            raise ValueError("Ruleset template ID is required")
+            raise GameValidationError("Ruleset template ID is required")
 
         template = self._ruleset_repository.get_by_id(ruleset_template_id)
         
         if template is None:
-            raise ValueError("Ruleset template not found")
+            raise RulesetNotFoundError("Ruleset template not found")
         
         # Check access: system templates are public, user templates require ownership
         if not template.is_system_provided:
             if template.created_by_user_id != dm_user_id:
-                raise PermissionError("You don't have access to this template")
+                raise RulesetAccessDeniedError("You don't have access to this template")
 
         # Handle custom template logic
         final_template_id = ruleset_template_id
@@ -115,7 +125,7 @@ class GameService:
         if ruleset_template_id == CUSTOM_TEMPLATE_ID:
             # Custom template requires custom_rules from the user
             if not custom_rules:
-                raise ValueError("Custom rules are required when using the Custom template")
+                raise GameValidationError("Custom rules are required when using the Custom template")
             
             validated_rules = validate_custom_rules(custom_rules)
             
@@ -188,10 +198,10 @@ class GameService:
 
         current_game = self._game_repository.get_game_by_id(game_id)
         if current_game is None:
-            raise ValueError("Game not found")
+            raise GameNotFoundError("Game not found")
 
         if current_game.status != GameStatus.ACTIVE:
-            raise ValueError("Game is not active")
+            raise GameStateError("Game is not active")
 
         # Verify user is not already an active member or kicked from the game
         existing_membership = (
@@ -201,9 +211,9 @@ class GameService:
         )
         if existing_membership:
             if existing_membership.status == GameMembershipStatus.ACTIVE:
-                raise ValueError("User is already an active member of the game")
+                raise GameMembershipError("User is already an active member of the game")
             if existing_membership.status == GameMembershipStatus.KICKED:
-                raise ValueError("User has been kicked from this game")
+                raise GameAccessDeniedError("User has been kicked from this game")
 
         # Reactivate membership if user previously left
         if existing_membership and existing_membership.status == GameMembershipStatus.LEFT:
@@ -230,10 +240,10 @@ class GameService:
         """
         invite = self._game_invites_repository.get_game_invite_by_code(invite_code)
         if invite is None:
-            raise ValueError("Invalid invite code")
+            raise GameInviteError("Invalid invite code")
 
         if not invite.is_valid():
-            raise ValueError("Invite code is no longer valid")
+            raise GameInviteError("Invite code is no longer valid")
 
         existing_membership = (
             self._game_membership_repository.get_game_membership_by_game_id_and_user_id(
@@ -253,7 +263,7 @@ class GameService:
         """
         current_game = self._game_repository.get_game_by_id(game_id)
         if current_game is None:
-            raise ValueError("Game not found")
+            raise GameNotFoundError("Game not found")
 
         membership = (
             self._game_membership_repository.get_game_membership_by_game_id_and_user_id(
@@ -262,7 +272,7 @@ class GameService:
         )
 
         if membership is None or membership.status != GameMembershipStatus.ACTIVE:
-            raise ValueError("User is not an active member of the game")
+            raise GameMembershipError("User is not an active member of the game")
 
         # Update game membership status to LEFT
         membership.status = GameMembershipStatus.LEFT
@@ -279,7 +289,7 @@ class GameService:
         """
         membership = self._game_membership_repository.get_game_membership_by_game_id_and_user_id(game_id, user_id)
         if membership is None:
-            raise ValueError("User to kick is not a member of the game")
+            raise GameMembershipError("User to kick is not a member of the game")
         
         if auth_user.role == UserRole.ADMIN.value:
             membership.status = GameMembershipStatus.KICKED
@@ -288,14 +298,14 @@ class GameService:
         if auth_user.role == UserRole.USER.value:
             user_membership = self._game_membership_repository.get_game_membership_by_game_id_and_user_id(game_id, auth_user.user_id)
             if user_membership is None:
-                raise ValueError("User is not a member of the game")
+                raise GameMembershipError("User is not a member of the game")
             if user_membership.status != GameMembershipStatus.ACTIVE:
-                raise ValueError("User is not an active member of the game")
+                raise GameMembershipError("User is not an active member of the game")
             if user_membership.role_in_game != GameRoleInGame.DM:
-                raise ValueError("User is not a DM of the game")
+                raise GameAccessDeniedError("Only the DM can kick users from the game")
             membership.status = GameMembershipStatus.KICKED
             return True
-        raise ValueError("User is not authorized to kick users from this game")
+        raise GameAccessDeniedError("User is not authorized to kick users from this game")
             
 
     def get_games(self, user: AuthUser) -> list[GameWithRole]:
@@ -349,7 +359,7 @@ class GameService:
         """
         Get a game by its ID.
         Returns None if game not found.
-        Raises ValueError if user doesn't have permission.
+        Raises GameAccessDeniedError if user doesn't have permission.
         """
         game = self._game_repository.get_game_by_id(game_id)
 
@@ -363,10 +373,10 @@ class GameService:
         # Other users can only see games they are active members of
         membership = self._game_membership_repository.get_game_membership_by_game_id_and_user_id(game_id, user.user_id)
         if membership is None:
-            raise ValueError("User is not a member of this game")
+            raise GameAccessDeniedError("User is not a member of this game")
         
         if membership.status != GameMembershipStatus.ACTIVE:
-            raise ValueError("User is not an active member of this game")
+            raise GameAccessDeniedError("User is not an active member of this game")
         
         return game
 
@@ -374,20 +384,21 @@ class GameService:
         """
         Get all members of a game.
         Returns list of GameMemberInfo with user data.
-        Raises ValueError if user doesn't have permission.
+        Raises GameNotFoundError if game not found.
+        Raises GameAccessDeniedError if user doesn't have permission.
         """
         game = self._game_repository.get_game_by_id(game_id)
         
         if game is None:
-            raise ValueError("Game not found")
+            raise GameNotFoundError("Game not found")
         
         # Verify user has access to view members
         if user.role != UserRole.ADMIN.value:
             membership = self._game_membership_repository.get_game_membership_by_game_id_and_user_id(game_id, user.user_id)
             if membership is None:
-                raise ValueError("User is not a member of this game")
+                raise GameAccessDeniedError("User is not a member of this game")
             if membership.status != GameMembershipStatus.ACTIVE:
-                raise ValueError("User is not an active member of this game")
+                raise GameAccessDeniedError("User is not an active member of this game")
         
         memberships = self._game_membership_repository.get_game_memberships_by_game_id(game_id)
         
@@ -408,6 +419,33 @@ class GameService:
     # =========================================================================
     # Rules Management
     # =========================================================================
+
+    def verify_dm_permissions(self, game: Game, user: AuthUser) -> None:
+        """
+        Verify that the user has DM permissions for the game.
+        
+        Args:
+            game: The game to check permissions for
+            user: The authenticated user
+            
+        Raises:
+            GameAccessDeniedError: If user is not DM or ADMIN
+        """
+        # ADMIN always has permission
+        if user.role == UserRole.ADMIN.value:
+            return
+        
+        # Check if user is the DM
+        if game.dm_user_id == user.user_id:
+            return
+        
+        # Additional check via membership
+        membership = self._game_membership_repository.get_game_membership_by_game_id_and_user_id(
+            game.id, user.user_id
+        )
+        
+        if membership is None or membership.role_in_game != GameRoleInGame.DM:
+            raise GameAccessDeniedError("Only the DM can perform this operation")
 
     def set_game_custom_rules(self, game: Game, rules: dict[str, Any] | None) -> None:
         """

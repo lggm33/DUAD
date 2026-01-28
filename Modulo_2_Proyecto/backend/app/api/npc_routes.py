@@ -5,20 +5,11 @@ Only the DM can create, update, and delete NPCs.
 All game members can view NPCs.
 """
 
-# ============================================================================
-# IMPORTS - Organized by type
-# ============================================================================
-
-# 1. Standard library imports
-# (none)
-
-# 2. Third-party imports
 from flask import Blueprint, request, jsonify, g
 
-# 3. Application extensions
+
 from app.extensions import db
 
-# 4. Domain layer
 from app.domain.npcs.npc_repository import NPCRepository
 from app.domain.npcs.npc_service import NPCService
 from app.domain.npcs.models import NPCType, NPCStatus
@@ -33,22 +24,12 @@ from app.domain.characters.character_repository import CharacterRepository
 from app.domain.games.game_repository import GameRepository
 from app.domain.games.game_membership_repository import GameMembershipRepository
 
-# 5. Presentation layer
 from app.presentation.npcs.presenters import NPCPresenter
 from app.presentation.common.auth import auth_required
 from app.presentation.common.errors import error_response
 
 
-# ============================================================================
-# BLUEPRINT DEFINITION
-# ============================================================================
-
 npc_bp = Blueprint("npc", __name__, url_prefix="/api/v1/game")
-
-
-# ============================================================================
-# SERVICE FACTORY
-# ============================================================================
 
 def get_npc_service() -> NPCService:
     """
