@@ -20,6 +20,7 @@
 @import './pages/game.css';
 @import './pages/join.css';
 @import './pages/history.css';
+@import './pages/notes.css';
 
 /* Layout */
 @import './layout/responsive.css';

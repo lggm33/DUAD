@@ -69,42 +69,31 @@ class UserRepository:
             return []
         return self._session.query(User).filter(User.id.in_(user_ids)).all()
 
-    def create_user(
+    def update_user(
         self,
-        email: str,
-        password_hash: str,
-        name: str,
+        user: User,
+        name: Optional[str] = None,
         username: Optional[str] = None,
-        role: str = UserRole.USER.value,
-        is_active: bool = True,
+        email: Optional[str] = None,
     ) -> User:
         """
-        Create a new user with a hashed password.
-
-        Note: This method expects a pre-hashed password. Password hashing
-        should be done in the service layer before calling this method.
+        Update an existing user's profile information.
 
         Args:
-            email: User's email address (must be unique)
-            password_hash: Pre-hashed password (e.g., bcrypt hash)
-            name: User's full name
-            username: User's chosen username (optional, unique)
-            role: User role (default: "USER")
-            is_active: Whether the account is active (default: True)
+            user: The User instance to update
+            name: New full name (optional)
+            username: New username (optional)
+            email: New email address (optional)
 
         Returns:
-            The created User instance
+            The updated User instance
         """
-        user = User(
-            email=email,
-            password_hash=password_hash,
-            name=name,
-            username=username,
-            role=role,
-            is_active=is_active,
-        )
+        if name is not None:
+            user.name = name
+        if username is not None:
+            user.username = username
+        if email is not None:
+            user.email = email
 
-        self._session.add(user)
-        self._session.flush()  # Get the ID without committing
-
+        self._session.flush()
         return user

@@ -15,6 +15,7 @@ export function dashboardPage(app) {
 
 async function initDashboard() {
   setupLogout()
+  setupProfileButton()
   setupTabs()
   await loadGames()
   setupCreateGameButton()
@@ -36,6 +37,15 @@ function setupLogout() {
       }
     })
   })
+}
+
+function setupProfileButton() {
+  const profileBtn = document.getElementById('profile-btn')
+  if (profileBtn) {
+    profileBtn.addEventListener('click', () => {
+      navigate('/profile')
+    })
+  }
 }
 
 async function loadGames() {

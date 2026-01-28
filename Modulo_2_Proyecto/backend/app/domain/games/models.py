@@ -16,8 +16,10 @@ if TYPE_CHECKING:
     from app.domain.users.models import User
     from app.domain.games.ruleset_models import RulesetTemplate
     from app.domain.characters.models import Character
+    from app.domain.notes.models import GameNote
 
 from app.domain.npcs.models import NPC
+from app.domain.notes.models import GameNote
 
 
 class GameStatus(str, Enum):
@@ -123,6 +125,9 @@ class Game(Base, IntPrimaryKeyMixin, TimestampMixin):
     )
     characters: Mapped[list["Character"]] = relationship(
         "Character", back_populates="game", cascade="all, delete-orphan"
+    )
+    notes: Mapped[list["GameNote"]] = relationship(
+        "GameNote", back_populates="game", cascade="all, delete-orphan"
     )
     npcs: Mapped[list[NPC]] = relationship(
         NPC,

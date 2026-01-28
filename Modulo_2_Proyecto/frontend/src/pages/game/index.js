@@ -81,6 +81,12 @@ async function loadGame(gameId) {
     if (historyLink) {
       historyLink.href = `/game/${gameId}/history`
     }
+
+    // Set up notes link
+    const notesLink = document.getElementById('view-notes-link')
+    if (notesLink) {
+      notesLink.href = `/game/${gameId}/notes`
+    }
     
     initChatComponent(gameId, showMessage)
 

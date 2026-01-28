@@ -378,7 +378,7 @@ def get_game_by_id(game_id: int):
         game = game_service.get_game_by_id(game_id, g.auth_user)
         if not game:
             return error_response("NOT_FOUND", "Game not found", status_code=404)
-        return jsonify(GamePresenter.game_only(game)), 200
+        return jsonify(GamePresenter.game_only(game, g.auth_user.user_id)), 200
         
     except GameAccessDeniedError as e:
         return error_response("FORBIDDEN", str(e), status_code=403)

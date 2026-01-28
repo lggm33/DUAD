@@ -14,6 +14,9 @@ if TYPE_CHECKING:
     from app.domain.games.models import GameInvite, GameMembership
     from app.domain.games.ruleset_models import RulesetTemplate
     from app.domain.characters.models import Character
+    from app.domain.notes.models import GameNote
+
+from app.domain.notes.models import GameNote
 
 
 class UserRole(str, Enum):
@@ -55,4 +58,7 @@ class User(Base, IntPrimaryKeyMixin, TimestampMixin):
     )
     characters: Mapped[list["Character"]] = relationship(
         "Character", back_populates="user", cascade="all, delete-orphan"
+    )
+    notes: Mapped[list["GameNote"]] = relationship(
+        "GameNote", back_populates="user", cascade="all, delete-orphan"
     )

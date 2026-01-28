@@ -22,11 +22,12 @@ class GamePresenter(Presenter):
         }
     
     @staticmethod
-    def game_only(game: Game) -> dict[str, Any]:
+    def game_only(game: Game, user_id: int | None = None) -> dict[str, Any]:
         """
         Returns a public dictionary for a Game entity only.
+        Includes role_in_game if user_id is provided.
         """
-        return {
+        result = {
             "id": game.id,
             "name": game.name,
             "status": game.status.value if hasattr(game.status, 'value') else game.status,
@@ -34,6 +35,15 @@ class GamePresenter(Presenter):
             "created_at": game.created_at.isoformat() if game.created_at else None,
             "updated_at": game.updated_at.isoformat() if game.updated_at else None,
         }
+        
+        if user_id is not None:
+            # Find membership for this user
+            membership = next((m for m in game.memberships if m.user_id == user_id), None)
+            if membership:
+                result["role_in_game"] = membership.role_in_game.value if hasattr(membership.role_in_game, 'value') else membership.role_in_game
+                result["membership_status"] = membership.status.value if hasattr(membership.status, 'value') else membership.status
+                
+        return result
     
     @staticmethod
     def game_with_role(game_with_role: GameWithRole) -> dict[str, Any]:
