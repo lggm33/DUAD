@@ -18,6 +18,7 @@ def create_app() -> Flask:
     from app.api.character_routes import character_bp
     from app.api.npc_routes import npc_bp
     from app.api.note_routes import note_bp
+    from app.api.admin_routes import admin_bp
     from app.realtime.socketio_events import register_socketio_events
 
     settings = get_settings()
@@ -51,6 +52,7 @@ def create_app() -> Flask:
     app.register_blueprint(character_bp)
     app.register_blueprint(npc_bp)
     app.register_blueprint(note_bp)
+    app.register_blueprint(admin_bp)
     _register_error_handlers(app)
 
     # Seed default ruleset templates on startup

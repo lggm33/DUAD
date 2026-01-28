@@ -54,3 +54,31 @@ class GameRepository:
         if not game_ids:
             return []
         return self._session.query(Game).filter(Game.id.in_(game_ids)).all()
+
+    def get_games_with_filters_admin(
+        self,
+        status: Optional[str] = None,
+        user_id: Optional[int] = None,
+        search: Optional[str] = None
+    ) -> list[Game]:
+        """
+        Get all games with optional filters for admin.
+        """
+        from app.domain.games.models import GameMembership
+        
+        query = self._session.query(Game).options(
+            joinedload(Game.dm_user),
+            joinedload(Game.memberships).joinedload(GameMembership.user),
+            joinedload(Game.invites)
+        )
+        
+        if status:
+            query = query.filter(Game.status == status)
+            
+        if user_id:
+            query = query.join(Game.memberships).filter(GameMembership.user_id == user_id)
+            
+        if search:
+            query = query.filter(Game.name.ilike(f"%{search}%"))
+            
+        return query.order_by(Game.created_at.desc()).all()

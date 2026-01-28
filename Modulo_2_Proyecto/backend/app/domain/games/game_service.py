@@ -402,16 +402,13 @@ class GameService:
         
         memberships = self._game_membership_repository.get_game_memberships_by_game_id(game_id)
         
-        user_ids = [m.user_id for m in memberships]
-        users = self._user_repository.get_users_by_ids(user_ids)
-        users_map = {u.id: u for u in users}
-        
+        # With eager loading (joinedload), users are already loaded
         return [
             GameMemberInfo(
                 membership=m,
                 user_id=m.user_id,
-                username=users_map[m.user_id].username if m.user_id in users_map else None,
-                name=users_map[m.user_id].name if m.user_id in users_map else "Unknown",
+                username=m.user.username if m.user else None,
+                name=m.user.name if m.user else "Unknown",
             )
             for m in memberships
         ]
@@ -502,3 +499,92 @@ class GameService:
             game.ruleset_template.base_rules,
             game.custom_rules,
         )
+
+    def admin_list_games_with_filters(
+        self,
+        status: Optional[str] = None,
+        user_id: Optional[int] = None,
+        search: Optional[str] = None
+    ) -> list[dict]:
+        """
+        List all games with filters for admin.
+        """
+        games = self._game_repository.get_games_with_filters_admin(
+            status=status,
+            user_id=user_id,
+            search=search
+        )
+        
+        result = []
+        for game in games:
+            game_dict = {
+                "id": game.id,
+                "name": game.name,
+                "status": game.status.value if hasattr(game.status, 'value') else game.status,
+                "created_at": game.created_at.isoformat() if game.created_at else None,
+                "dm_user": {
+                    "id": game.dm_user.id,
+                    "name": game.dm_user.name,
+                    "username": game.dm_user.username
+                },
+                "players_count": len([m for m in game.memberships if m.status == GameMembershipStatus.ACTIVE]),
+                "members": [
+                    {
+                        "user_id": m.user_id,
+                        "username": m.user.username,
+                        "name": m.user.name,
+                        "role_in_game": m.role_in_game.value if hasattr(m.role_in_game, 'value') else m.role_in_game,
+                        "status": m.status.value if hasattr(m.status, 'value') else m.status
+                    }
+                    for m in game.memberships
+                ]
+            }
+            result.append(game_dict)
+            
+        return result
+
+    def admin_end_game(self, game_id: int) -> Game:
+        """
+        End a game administratively.
+        """
+        game = self._game_repository.get_game_by_id(game_id)
+        if not game:
+            raise GameNotFoundError("Game not found")
+            
+        game.status = GameStatus.ENDED
+        return game
+
+    def admin_kick_member(self, game_id: int, user_id: int) -> dict:
+        """
+        Kick a member from a game administratively.
+        If the member is the DM, the game is ended.
+        """
+        membership = self._game_membership_repository.get_game_membership_by_game_id_and_user_id(game_id, user_id)
+        if not membership:
+            raise GameMembershipError("User is not a member of this game")
+            
+        membership.status = GameMembershipStatus.KICKED
+        membership.left_at = datetime.now(timezone.utc)
+        
+        game_ended = False
+        if membership.role_in_game == GameRoleInGame.DM:
+            game = self._game_repository.get_game_by_id(game_id)
+            if game:
+                game.status = GameStatus.ENDED
+                game_ended = True
+                
+        return {"kicked": True, "game_ended": game_ended}
+
+    def admin_list_users(self) -> list[dict]:
+        """
+        List all users for admin filters.
+        """
+        users = self._user_repository.get_all_users()
+        return [
+            {
+                "id": user.id,
+                "name": user.name,
+                "username": user.username
+            }
+            for user in users
+        ]

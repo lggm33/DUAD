@@ -14,6 +14,12 @@ export function dashboardPage(app) {
 }
 
 async function initDashboard() {
+  const user = getUserFromToken()
+  const adminLink = document.getElementById('admin-link')
+  if (adminLink && user && user.role === 'ADMIN') {
+    adminLink.hidden = false
+  }
+
   setupLogout()
   setupProfileButton()
   setupTabs()

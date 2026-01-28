@@ -69,6 +69,12 @@ class UserRepository:
             return []
         return self._session.query(User).filter(User.id.in_(user_ids)).all()
 
+    def get_all_users(self) -> list[User]:
+        """
+        Get all users.
+        """
+        return self._session.query(User).order_by(User.name.asc()).all()
+
     def update_user(
         self,
         user: User,

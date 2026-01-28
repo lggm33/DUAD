@@ -3,6 +3,7 @@ import './styles/app.css'
 import './styles/inventory.css'
 import './styles/pages/profile.css'
 import './styles/pages/notes.css'
+import './styles/pages/game/game-modals.css'
 import { 
   registerRoute, 
   registerProtectedRoute, 
@@ -20,6 +21,7 @@ import { joinPage } from './pages/join.js'
 import { historyPage } from './pages/history.js'
 import { inventoryPage } from './pages/inventory.js'
 import { notesPage } from './pages/notes.js'
+import { adminDashboardPage } from './pages/admin-dashboard.js'
 
 const app = document.querySelector('#app')
 
@@ -33,6 +35,7 @@ registerGuestRoute('/sign-up', () => signUpPage(app))
 // Protected routes (redirect to sign-in if not authenticated)
 registerProtectedRoute('/dashboard', () => dashboardPage(app))
 registerProtectedRoute('/profile', () => profilePage(app))
+registerProtectedRoute('/admin', () => adminDashboardPage(app))
 
 // Dynamic protected routes
 registerDynamicProtectedRoute('/game/:id', () => gamePage(app))
