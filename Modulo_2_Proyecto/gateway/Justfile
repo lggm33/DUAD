@@ -1,0 +1,49 @@
+set shell := ["bash", "-cu"]
+
+# Start nginx gateway (development mode)
+start:
+    nginx -p "{{justfile_directory()}}" -c nginx.conf
+
+# Test nginx configuration
+test:
+    nginx -p "{{justfile_directory()}}" -c nginx.conf -t
+
+# Stop nginx gateway
+stop:
+    nginx -p "{{justfile_directory()}}" -c nginx.conf -s stop
+
+# Reload nginx configuration without restart
+reload:
+    nginx -p "{{justfile_directory()}}" -c nginx.conf -s reload
+
+# Restart nginx (stop + start)
+restart: stop start
+
+# Show nginx status
+status:
+    @pgrep -f "nginx.*gateway" > /dev/null && echo "✅ Gateway running" || echo "❌ Gateway not running"
+
+# View access logs
+logs:
+    tail -f logs/access.log
+
+# View error logs
+errors:
+    tail -f logs/error.log
+
+# Run with Docker
+docker-up:
+    docker compose -f docker-compose.dev.yml up --build
+
+# Run with Docker in background
+docker-up-d:
+    docker compose -f docker-compose.dev.yml up -d --build
+
+# Stop Docker container
+docker-down:
+    docker compose -f docker-compose.dev.yml down
+
+# View Docker logs
+docker-logs:
+    docker compose -f docker-compose.dev.yml logs -f
+

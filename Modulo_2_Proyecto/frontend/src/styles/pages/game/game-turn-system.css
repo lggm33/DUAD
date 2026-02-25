@@ -1,0 +1,205 @@
+/* ========================================
+   Turn System & Messages
+   Turn tracker, animations, and game messages
+   ======================================== */
+
+/* ========================================
+   Turn Tracker Banner
+   ======================================== */
+.turn-banner {
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.15) 0%, rgba(20, 184, 166, 0.15) 100%);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-xl);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  animation: slideDown 0.4s ease-out;
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.1);
+  margin-bottom: var(--space-lg);
+  transition: all var(--transition-base);
+}
+
+.turn-banner[hidden] {
+  display: none;
+}
+
+.turn-banner-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  color: var(--color-cyan);
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.turn-banner-content svg {
+  flex-shrink: 0;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+#turn-message {
+  color: var(--color-text);
+}
+
+#turn-message strong {
+  color: var(--color-cyan);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ========================================
+   Animations
+   ======================================== */
+@keyframes slideDown {
+  from { 
+    transform: translateY(-20px); 
+    opacity: 0; 
+  }
+  to { 
+    transform: translateY(0); 
+    opacity: 1; 
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { 
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========================================
+   Turn Banner States
+   ======================================== */
+
+/* Active turn (current user's turn) */
+.turn-banner.turn-banner-active {
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.3) 0%, rgba(20, 184, 166, 0.3) 100%);
+  border: 2px solid var(--color-cyan);
+  box-shadow: 0 0 30px rgba(34, 211, 238, 0.3),
+              0 0 60px rgba(34, 211, 238, 0.1);
+}
+
+.turn-banner.turn-banner-active #turn-message {
+  color: var(--color-cyan);
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+.turn-banner.turn-banner-active .turn-banner-content svg {
+  color: var(--color-cyan);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+/* NPC Turn Banner */
+.turn-banner.turn-banner-npc {
+  background: linear-gradient(90deg, 
+    rgba(245, 158, 11, 0.2) 0%, 
+    rgba(217, 119, 6, 0.2) 100%);
+  border: 1px solid var(--color-warning);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+}
+
+.turn-banner.turn-banner-npc #turn-message {
+  color: var(--color-warning);
+  font-weight: 600;
+}
+
+.turn-banner.turn-banner-npc .turn-banner-content svg {
+  color: var(--color-warning);
+}
+
+/* ========================================
+   Turn Controls
+   ======================================== */
+
+/* Clear turn button */
+#clear-turn-btn {
+  padding: var(--space-xs) var(--space-md);
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  transition: all var(--transition-fast);
+}
+
+#clear-turn-btn:hover {
+  color: var(--color-error);
+  background: rgba(239, 68, 68, 0.1);
+  border-color: var(--color-error);
+}
+
+.player-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-left: auto;
+}
+
+.btn-turn {
+  padding: var(--space-xs) var(--space-sm);
+  font-size: 0.8125rem;
+  color: var(--color-cyan);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  background: transparent;
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.btn-turn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.btn-turn:hover {
+  color: var(--color-cyan);
+  background: rgba(34, 211, 238, 0.15);
+  border-color: var(--color-cyan);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(34, 211, 238, 0.2);
+}
+
+/* ========================================
+   Game Messages
+   ======================================== */
+.game-message {
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+  animation: slideIn 0.3s ease-out;
+}
+
+.game-message-success {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid var(--color-success);
+  color: var(--color-success);
+}
+
+.game-message-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--color-error);
+  color: var(--color-error);
+}
+
+.game-message-info {
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid var(--color-cyan);
+  color: var(--color-cyan);
+}

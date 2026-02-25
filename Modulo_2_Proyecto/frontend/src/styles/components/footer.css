@@ -1,0 +1,54 @@
+/* ========================================
+   Footer Component
+   ======================================== */
+
+.footer {
+  padding: var(--space-3xl) var(--space-xl);
+  border-top: 1px solid var(--color-border);
+  background: rgba(17, 24, 39, 0.5);
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.footer-logo {
+  height: 3rem;
+}
+
+.footer-links {
+  display: flex;
+  gap: var(--space-xl);
+}
+
+.footer-links a {
+  color: var(--color-text-secondary);
+}
+
+.footer-links a:hover {
+  color: var(--color-cyan);
+}
+
+.footer-bottom {
+  max-width: 1200px;
+  margin: var(--space-xl) auto 0;
+  padding-top: var(--space-xl);
+  border-top: 1px solid var(--color-border);
+  text-align: center;
+}
+
+.footer-bottom p {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+

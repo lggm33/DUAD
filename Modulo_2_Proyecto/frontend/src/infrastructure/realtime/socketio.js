@@ -1,0 +1,315 @@
+/**
+ * Socket.IO client for real-time communication.
+ * Handles connection, authentication, rooms, and events.
+ */
+
+import { io } from 'socket.io-client'
+
+const RECONNECT_DELAY_MS = 3000
+const MAX_RECONNECT_ATTEMPTS = 5
+
+export class SocketIOClient {
+  constructor(options = {}) {
+    this.socket = null
+    this.isConnected = false
+    this.currentGameId = null
+
+    // Callbacks
+    this.onConnected = options.onConnected || (() => {})
+    this.onDisconnected = options.onDisconnected || (() => {})
+    this.onError = options.onError || (() => {})
+    this.onAuthOk = options.onAuthOk || (() => {})
+
+    // Event handlers map
+    this.eventHandlers = new Map()
+  }
+
+  /**
+   * Connect to the Socket.IO server with JWT authentication.
+   */
+  connect(token) {
+    if (this.socket?.connected) {
+      console.log('[SocketIO] Already connected')
+      return
+    }
+
+    const url = this._getServerUrl()
+    console.log('[SocketIO] Connecting to:', url)
+
+    this.socket = io(url, {
+      auth: { token },
+      transports: ['websocket'],  // Force WebSocket, skip polling
+      reconnection: true,
+      reconnectionAttempts: MAX_RECONNECT_ATTEMPTS,
+      reconnectionDelay: RECONNECT_DELAY_MS,
+    })
+
+    this._setupEventListeners()
+  }
+
+  /**
+   * Disconnect from the server.
+   */
+  disconnect() {
+    if (this.socket) {
+      this.socket.disconnect()
+      this.socket = null
+      this.isConnected = false
+      this.currentGameId = null
+    }
+  }
+
+  /**
+   * Join a game room for real-time updates.
+   */
+  joinGame(gameId) {
+    if (!this.socket?.connected) {
+      console.warn('[SocketIO] Cannot join game: not connected')
+      return
+    }
+
+    this.socket.emit('join_game', { game_id: gameId })
+  }
+
+  /**
+   * Leave the current game room (user abandons the game).
+   */
+  leaveGame(gameId) {
+    if (!this.socket?.connected) {
+      return
+    }
+
+    this.socket.emit('leave_game', { game_id: gameId || this.currentGameId })
+    this.currentGameId = null
+  }
+
+  /**
+   * Leave the chat room (user navigates away from game view).
+   * User remains a member of the game, just not viewing the chat.
+   */
+  leaveChat(gameId) {
+    if (!this.socket?.connected) {
+      return
+    }
+
+    this.socket.emit('leave_chat', { game_id: gameId || this.currentGameId })
+    this.currentGameId = null
+  }
+
+  /**
+   * Send a chat message to the current game.
+   */
+  sendChatMessage(gameId, content, extraData = {}) {
+    if (!this.socket?.connected) {
+      console.warn('[SocketIO] Cannot send message: not connected')
+      return
+    }
+
+    this.socket.emit('chat_message', {
+      game_id: gameId,
+      content: content,
+      ...extraData
+    })
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TURN MANAGEMENT METHODS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Set the active turn to a specific user (DM only).
+   * @param {number} gameId - The game ID
+   * @param {number} userId - The user ID to give the turn to
+   * @param {string} characterName - The character name (optional)
+   */
+  setTurn(gameId, userId, characterName = null) {
+    if (!this._checkConnection('setTurn')) return
+
+    this.socket.emit('set_turn', {
+      game_id: gameId,
+      turn_type: 'USER',
+      user_id: userId,
+      character_name: characterName
+    })
+  }
+
+  /**
+   * Set the active turn to an NPC (DM only).
+   */
+  setTurnNPC(gameId, npcId, displayName, npcType) {
+    if (!this._checkConnection('setTurnNPC')) return
+
+    this.socket.emit('set_turn', {
+      game_id: gameId,
+      turn_type: 'NPC',
+      npc_id: npcId,
+      display_name: displayName,
+      npc_type: npcType
+    })
+  }
+
+  /**
+   * Clear the active turn (DM only).
+   * @param {number} gameId - The game ID
+   */
+  clearTurn(gameId) {
+    if (!this._checkConnection('clearTurn')) return
+
+    this.socket.emit('clear_turn', {
+      game_id: gameId
+    })
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // EVENT REGISTRATION
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Register a handler for a specific event type.
+   */
+  on(eventType, handler) {
+    this.eventHandlers.set(eventType, handler)
+
+    // If socket exists, also register with socket.io
+    if (this.socket) {
+      this.socket.on(eventType, handler)
+    }
+  }
+
+  /**
+   * Remove a handler for a specific event type.
+   */
+  off(eventType) {
+    this.eventHandlers.delete(eventType)
+
+    if (this.socket) {
+      this.socket.off(eventType)
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PRIVATE METHODS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Check if socket is connected and log warning if not.
+   */
+  _checkConnection(methodName) {
+    if (!this.socket?.connected) {
+      console.warn(`[SocketIO] Cannot ${methodName}: not connected`)
+      return false
+    }
+    return true
+  }
+
+  _getServerUrl() {
+    // Socket.IO connects to the same host by default
+    // The path is /socket.io/ by default
+    const protocol = window.location.protocol
+    const host = window.location.host
+    return `${protocol}//${host}`
+  }
+
+  _setupEventListeners() {
+    // Connection events
+    this.socket.on('connect', () => {
+      console.log('[SocketIO] Connected')
+      this.isConnected = true
+      this.onConnected()
+    })
+
+    this.socket.on('disconnect', (reason) => {
+      console.log('[SocketIO] Disconnected:', reason)
+      this.isConnected = false
+      this.currentGameId = null
+      this.onDisconnected(reason)
+    })
+
+    this.socket.on('connect_error', (error) => {
+      console.error('[SocketIO] Connection error:', error.message)
+      this.onError(error)
+    })
+
+    // Auth response
+    this.socket.on('auth_ok', (data) => {
+      console.log('[SocketIO] Authenticated as:', data.username)
+      this.onAuthOk(data)
+    })
+
+    // Game room events
+    this.socket.on('joined_game', (data) => {
+      console.log('[SocketIO] Joined game:', data.game_id)
+      this.currentGameId = data.game_id
+      const handler = this.eventHandlers.get('joined_game')
+      if (handler) handler(data)
+    })
+
+    this.socket.on('user_joined', (data) => {
+      console.log('[SocketIO] User joined:', data.username)
+      const handler = this.eventHandlers.get('user_joined')
+      if (handler) handler(data)
+    })
+
+    this.socket.on('user_left', (data) => {
+      console.log('[SocketIO] User left:', data.username)
+      const handler = this.eventHandlers.get('user_left')
+      if (handler) handler(data)
+    })
+
+    // Chat events
+    this.socket.on('chat_message', (data) => {
+      console.log('[SocketIO] Chat message:', data)
+      const handler = this.eventHandlers.get('chat_message')
+      if (handler) handler(data)
+    })
+
+    // Error events
+    this.socket.on('error', (data) => {
+      console.error('[SocketIO] Error:', data)
+      const handler = this.eventHandlers.get('error')
+      if (handler) handler(data)
+    })
+
+    // Re-register custom handlers
+    const builtInEvents = [
+      'joined_game',
+      'user_joined',
+      'user_left',
+      'chat_message',
+      'error',
+    ]
+    for (const [eventType, handler] of this.eventHandlers) {
+      if (!builtInEvents.includes(eventType)) {
+        this.socket.on(eventType, handler)
+      }
+    }
+  }
+
+  /**
+   * Invoke a registered event handler if it exists.
+   */
+  _invokeHandler(eventType, data) {
+    const handler = this.eventHandlers.get(eventType)
+    if (handler) {
+      handler(data)
+    }
+  }
+}
+
+// Singleton instance for app-wide use
+let instance = null
+
+export function getSocketIOClient(options = {}) {
+  if (!instance) {
+    instance = new SocketIOClient(options)
+  }
+  return instance
+}
+
+export function resetSocketIOClient() {
+  if (instance) {
+    instance.disconnect()
+    instance = null
+  }
+}
+

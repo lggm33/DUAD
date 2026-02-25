@@ -1,0 +1,71 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-header">
+      <a href="/" data-link class="auth-logo-link">
+        <img src="/logo.png" alt="Lyfter DnD" class="auth-logo" />
+      </a>
+      <h1 class="auth-title">Welcome Back</h1>
+      <p class="auth-subtitle">Sign in to continue your adventure</p>
+    </div>
+
+    <form id="sign-in-form" class="auth-form">
+      <div class="form-group">
+        <label for="email" class="form-label">Email</label>
+        <input 
+          type="email" 
+          id="email" 
+          name="email" 
+          class="form-input" 
+          placeholder="hero@lyfter.com"
+          required 
+          autocomplete="email"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="password" class="form-label">Password</label>
+        <input 
+          type="password" 
+          id="password" 
+          name="password" 
+          class="form-input" 
+          placeholder="••••••••"
+          required 
+          autocomplete="current-password"
+        />
+      </div>
+
+      <div class="form-options">
+        <label class="checkbox-label">
+          <input type="checkbox" name="remember" class="checkbox-input" />
+          <span>Remember me</span>
+        </label>
+        <a href="/forgot-password" class="link-subtle">Forgot password?</a>
+      </div>
+
+      <div id="form-error" class="form-error" hidden></div>
+
+      <button type="submit" class="btn btn-primary btn-full">
+        <span class="btn-text">Sign In</span>
+        <span class="btn-loader" hidden>
+          <span class="loader"></span>
+        </span>
+      </button>
+    </form>
+
+    <div class="auth-divider">
+      <span>or</span>
+    </div>
+
+    <div class="auth-footer">
+      <p>Don't have an account? <a href="/sign-up" data-link class="link-primary">Create one</a></p>
+    </div>
+  </div>
+
+  <div class="auth-decoration">
+    <div class="decoration-orb decoration-orb-1"></div>
+    <div class="decoration-orb decoration-orb-2"></div>
+    <div class="decoration-orb decoration-orb-3"></div>
+  </div>
+</div>
+

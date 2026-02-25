@@ -1,0 +1,63 @@
+set shell := ["bash", "-cu"]
+
+PYTHON := "python3"
+VENV_DIR := ".venv"
+PORT := "8000"
+VENV_PYTHON := VENV_DIR + "/bin/python"
+VENV_PIP := VENV_DIR + "/bin/pip"
+
+# Create a local virtual environment
+venv:
+	{{PYTHON}} -m venv {{VENV_DIR}}
+
+# Install dependencies into the venv (pip)
+install: venv
+	{{VENV_PIP}} install --upgrade pip
+	{{VENV_PIP}} install -r requirements.txt
+
+# Run the app locally with gevent (development with WebSocket support)
+dev:
+	APP_ENV=staging DEBUG=true PORT={{PORT}} {{VENV_PYTHON}} main.py
+
+# Run the app with gunicorn + gevent (simulates production locally)
+# Flask-SocketIO requires geventwebsocket worker for WebSocket support
+dev-gunicorn:
+	APP_ENV=staging DEBUG=true PORT={{PORT}} {{VENV_DIR}}/bin/gunicorn \
+		-k geventwebsocket.gunicorn.workers.GeventWebSocketWorker \
+		-w 1 \
+		-b 0.0.0.0:{{PORT}} \
+		--reload \
+		main:app
+
+# Run the app in production mode (gunicorn + gevent workers)
+# Note: -w 1 because SocketIO connections are in-memory per process
+# For horizontal scaling, configure Redis message_queue in app/__init__.py
+prod:
+	APP_ENV=production {{VENV_DIR}}/bin/gunicorn \
+		-k geventwebsocket.gunicorn.workers.GeventWebSocketWorker \
+		-w 1 \
+		-b 0.0.0.0:${PORT} \
+		main:app
+
+# Run tests
+test:
+	{{VENV_PYTHON}} -m pytest -q
+
+# Database migrations (Alembic)
+# Note: DATABASE_URL is read from the environment (or .env via migrations/env.py).
+db-revision message: install
+	APP_ENV=staging {{VENV_PYTHON}} -m alembic revision --autogenerate -m "{{message}}"
+
+db-up: install
+	APP_ENV=staging {{VENV_PYTHON}} -m alembic upgrade head
+
+# Run migrations on test database (uses DATABASE_URL_TEST)
+db-up-test: install
+	TESTING=true APP_ENV=staging {{VENV_PYTHON}} -m alembic upgrade head
+
+# Mark all migrations as applied on test database (sync alembic state)
+db-stamp-test: install
+	TESTING=true APP_ENV=staging {{VENV_PYTHON}} -m alembic stamp head
+
+db-down steps="1": install
+	APP_ENV=staging {{VENV_PYTHON}} -m alembic downgrade -{{steps}}

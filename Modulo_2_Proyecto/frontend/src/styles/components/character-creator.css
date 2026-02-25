@@ -1,0 +1,704 @@
+/* ========================================
+   Character Creator Component Styles
+   ======================================== */
+
+/* ========================================
+   Modal Base
+   ======================================== */
+.character-creator-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  animation: ccFadeIn 0.25s ease-out;
+  padding: var(--space-lg);
+  overflow-y: auto;
+}
+
+.character-creator-overlay[hidden] {
+  display: none;
+}
+
+@keyframes ccFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.character-creator-modal {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 720px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: ccSlideIn 0.3s ease-out;
+  box-shadow: 
+    0 0 60px rgba(34, 211, 238, 0.15),
+    var(--shadow-lg);
+}
+
+@keyframes ccSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ========================================
+   Modal Header
+   ======================================== */
+.character-creator-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: 1px solid var(--color-border);
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.05) 0%, transparent 100%);
+}
+
+.character-creator-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.character-creator-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--color-cyan-dark) 0%, var(--color-navy) 100%);
+  border-radius: var(--radius-lg);
+  color: var(--color-cyan);
+}
+
+.character-creator-title {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--color-cyan) 0%, var(--color-turquoise) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.character-creator-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.character-creator-close:hover {
+  background: var(--color-bg-elevated);
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
+
+/* ========================================
+   Modal Body
+   ======================================== */
+.character-creator-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-xl);
+}
+
+.character-creator-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.character-creator-body::-webkit-scrollbar-track {
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-full);
+}
+
+.character-creator-body::-webkit-scrollbar-thumb {
+  background: var(--color-cyan-dark);
+  border-radius: var(--radius-full);
+}
+
+/* ========================================
+   Form Sections
+   ======================================== */
+.cc-form-section {
+  margin-bottom: var(--space-xl);
+}
+
+.cc-form-section:last-child {
+  margin-bottom: 0;
+}
+
+.cc-section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cc-section-icon {
+  color: var(--color-cyan);
+}
+
+.cc-section-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ========================================
+   Form Grid
+   ======================================== */
+.cc-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-lg);
+}
+
+.cc-form-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 640px) {
+  .cc-form-grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cc-form-full {
+  grid-column: 1 / -1;
+}
+
+/* ========================================
+   Form Groups
+   ======================================== */
+.cc-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.cc-form-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cc-form-label-required::after {
+  content: '*';
+  color: var(--color-error);
+  margin-left: var(--space-xs);
+}
+
+.cc-form-input,
+.cc-form-select,
+.cc-form-textarea {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  transition: all var(--transition-fast);
+}
+
+.cc-form-input:focus,
+.cc-form-select:focus,
+.cc-form-textarea:focus {
+  outline: none;
+  border-color: var(--color-cyan);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+}
+
+.cc-form-input::placeholder,
+.cc-form-textarea::placeholder {
+  color: var(--color-text-muted);
+}
+
+.cc-form-select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-sm) center;
+  padding-right: var(--space-xl);
+}
+
+.cc-form-textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.cc-form-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.cc-form-error {
+  font-size: 0.75rem;
+  color: var(--color-error);
+}
+
+/* ========================================
+   Stats Grid (Point Buy)
+   ======================================== */
+.cc-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+}
+
+@media (max-width: 480px) {
+  .cc-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.cc-stat-card {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  text-align: center;
+  transition: all var(--transition-fast);
+}
+
+.cc-stat-card:hover {
+  border-color: var(--color-cyan-dark);
+}
+
+.cc-stat-name {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--color-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: var(--space-sm);
+}
+
+.cc-stat-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.cc-stat-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+}
+
+.cc-stat-btn:hover:not(:disabled) {
+  background: var(--color-cyan-dark);
+  border-color: var(--color-cyan);
+  color: var(--color-cyan);
+}
+
+.cc-stat-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cc-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+  min-width: 36px;
+}
+
+.cc-stat-modifier {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  margin-top: var(--space-xs);
+}
+
+.cc-stat-modifier-positive {
+  color: var(--color-success);
+}
+
+.cc-stat-modifier-negative {
+  color: var(--color-error);
+}
+
+/* ========================================
+   Points Counter
+   ======================================== */
+.cc-points-counter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+
+.cc-points-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.cc-points-value {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.cc-points-current {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.cc-points-current-valid {
+  color: var(--color-success);
+}
+
+.cc-points-current-warning {
+  color: var(--color-warning);
+}
+
+.cc-points-current-error {
+  color: var(--color-error);
+}
+
+.cc-points-total {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+/* ========================================
+   Skills Section
+   ======================================== */
+.cc-skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-sm);
+}
+
+.cc-skill-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.cc-skill-item:hover {
+  border-color: var(--color-cyan-dark);
+}
+
+.cc-skill-item.selected {
+  background: rgba(34, 211, 238, 0.1);
+  border-color: var(--color-cyan);
+}
+
+.cc-skill-checkbox {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.cc-skill-item.selected .cc-skill-checkbox {
+  background: var(--color-cyan);
+  border-color: var(--color-cyan);
+}
+
+.cc-skill-checkbox svg {
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all var(--transition-fast);
+}
+
+.cc-skill-item.selected .cc-skill-checkbox svg {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.cc-skill-name {
+  font-size: 0.875rem;
+  color: var(--color-text);
+}
+
+.cc-skill-stat {
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  margin-left: auto;
+}
+
+.cc-skills-counter {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-md);
+}
+
+.cc-skills-counter-valid {
+  color: var(--color-success);
+}
+
+.cc-skills-counter-error {
+  color: var(--color-error);
+}
+
+/* ========================================
+   Character Preview Card
+   ======================================== */
+.cc-preview-card {
+  background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-bg-elevated) 100%);
+  border: 1px solid var(--color-cyan-dark);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.cc-preview-avatar {
+  width: 72px;
+  height: 72px;
+  background: linear-gradient(135deg, var(--color-cyan-dark) 0%, var(--color-navy) 100%);
+  border: 2px solid var(--color-cyan);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-cyan);
+}
+
+.cc-preview-info {
+  flex: 1;
+}
+
+.cc-preview-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 var(--space-xs) 0;
+}
+
+.cc-preview-details {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.cc-preview-stats {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.cc-preview-stat {
+  text-align: center;
+}
+
+.cc-preview-stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-cyan);
+}
+
+.cc-preview-stat-label {
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+/* ========================================
+   Modal Footer
+   ======================================== */
+.character-creator-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-lg) var(--space-xl);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+
+.cc-footer-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.cc-footer-info svg {
+  color: var(--color-warning);
+}
+
+.cc-footer-actions {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.cc-btn-save-draft {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.cc-btn-save-draft:hover {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-text-muted);
+}
+
+.cc-btn-submit {
+  background: linear-gradient(135deg, var(--color-cyan-dark) 0%, var(--color-cyan) 100%);
+  border: none;
+  color: var(--color-bg-dark);
+  font-weight: 600;
+}
+
+.cc-btn-submit:hover:not(:disabled) {
+  box-shadow: 0 0 25px rgba(34, 211, 238, 0.5);
+  transform: translateY(-2px);
+}
+
+.cc-btn-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ========================================
+   Loading State
+   ======================================== */
+.cc-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3xl);
+  gap: var(--space-md);
+  color: var(--color-text-muted);
+}
+
+/* ========================================
+   Validation Messages
+   ======================================== */
+.cc-validation-summary {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.cc-validation-summary h4 {
+  margin: 0 0 var(--space-sm) 0;
+  font-size: 0.875rem;
+  color: var(--color-error);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.cc-validation-summary ul {
+  margin: 0;
+  padding-left: var(--space-lg);
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
+
+.cc-validation-summary li {
+  margin-bottom: var(--space-xs);
+}
+
+/* ========================================
+   Responsive Adjustments
+   ======================================== */
+@media (max-width: 640px) {
+  .character-creator-overlay {
+    padding: var(--space-sm);
+  }
+
+  .character-creator-modal {
+    max-height: 95vh;
+  }
+
+  .character-creator-header {
+    padding: var(--space-md);
+  }
+
+  .character-creator-body {
+    padding: var(--space-md);
+  }
+
+  .character-creator-footer {
+    flex-direction: column;
+    gap: var(--space-md);
+    padding: var(--space-md);
+  }
+
+  .cc-footer-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .cc-footer-actions .btn {
+    flex: 1;
+  }
+
+  .cc-preview-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .cc-preview-stats {
+    justify-content: center;
+  }
+}
+

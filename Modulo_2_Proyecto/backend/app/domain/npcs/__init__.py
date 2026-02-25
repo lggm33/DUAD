@@ -1,0 +1,2 @@
+"""NPCs domain package."""
+

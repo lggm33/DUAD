@@ -1,0 +1,141 @@
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <div class="dashboard-logo-section">
+      <a href="/" data-link class="dashboard-logo-link">
+        <img src="/logo.png" alt="Lyfter DnD" class="dashboard-logo" />
+      </a>
+      <div class="dashboard-title-group">
+        <h1 class="dashboard-title">Adventure Hub</h1>
+        <p class="dashboard-subtitle">Manage your games and join new adventures</p>
+      </div>
+    </div>
+    <button id="logout-btn" class="btn btn-ghost">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+        <polyline points="16,17 21,12 16,7"></polyline>
+        <line x1="21" y1="12" x2="9" y2="12"></line>
+      </svg>
+      <span>Logout</span>
+    </button>
+    <button id="profile-btn" class="btn btn-ghost">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+        <circle cx="12" cy="7" r="4"></circle>
+      </svg>
+      <span>Profile</span>
+    </button>
+    <a href="/admin" id="admin-link" class="btn btn-ghost" data-link hidden>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+      </svg>
+      <span>Admin</span>
+    </a>
+  </div>
+
+  <div class="dashboard-content">
+    <!-- Actions Section -->
+    <section class="dashboard-actions">
+      <div class="action-card action-card-create">
+        <div class="action-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+            <path d="M2 17l10 5 10-5"></path>
+            <path d="M2 12l10 5 10-5"></path>
+          </svg>
+        </div>
+        <h3 class="action-title">Create Game</h3>
+        <p class="action-description">Start a new adventure as a Dungeon Master</p>
+        <button id="open-game-creator-btn" class="btn btn-primary btn-full">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span class="btn-text">Create New Game</span>
+        </button>
+        <p id="create-game-disabled-msg" class="action-disabled-msg" hidden>
+          You already have an active game
+        </p>
+      </div>
+
+      <div class="action-card action-card-join">
+        <div class="action-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <h3 class="action-title">Join Game</h3>
+        <p class="action-description">Enter an invite code to join an existing game</p>
+        <form id="join-game-form" class="action-form">
+          <div class="form-group">
+            <input 
+              type="text" 
+              id="invite-code" 
+              name="invite_code" 
+              class="form-input" 
+              placeholder="Enter invite code..."
+              required 
+            />
+          </div>
+          <button type="submit" id="join-game-btn" class="btn btn-outline btn-full">
+            <span class="btn-text">Join Game</span>
+            <span class="btn-loader" hidden>
+              <span class="loader"></span>
+            </span>
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Error/Success Messages -->
+    <div id="dashboard-message" class="dashboard-message" hidden></div>
+
+    <!-- Games List Section -->
+    <section class="dashboard-games">
+      <div class="games-header">
+        <h2 class="games-title">Your Games</h2>
+        <span id="games-count" class="games-count"></span>
+      </div>
+
+      <div class="games-tabs">
+        <button class="games-tab active" data-filter="all">
+          <span class="tab-text">All Games</span>
+          <span id="tab-count-all" class="tab-count">0</span>
+        </button>
+        <button class="games-tab" data-filter="active">
+          <span class="tab-text">Active</span>
+          <span id="tab-count-active" class="tab-count">0</span>
+        </button>
+        <button class="games-tab" data-filter="ended">
+          <span class="tab-text">Ended</span>
+          <span id="tab-count-ended" class="tab-count">0</span>
+        </button>
+      </div>
+
+      <div id="games-loading" class="games-loading">
+        <span class="loader loader-lg"></span>
+        <p>Loading your adventures...</p>
+      </div>
+
+      <div id="games-empty" class="games-empty" hidden>
+        <div class="empty-icon">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+        </div>
+        <h3>No Adventures Yet</h3>
+        <p>Create your first game or join an existing one to start your journey!</p>
+      </div>
+
+      <div id="games-list" class="games-list" hidden></div>
+    </section>
+  </div>
+
+  <div class="dashboard-decoration">
+    <div class="decoration-orb decoration-orb-1"></div>
+    <div class="decoration-orb decoration-orb-2"></div>
+  </div>
+</div>

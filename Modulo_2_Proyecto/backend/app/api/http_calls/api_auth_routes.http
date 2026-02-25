@@ -1,0 +1,59 @@
+### Auth API Endpoints Test
+
+@base_url = http://localhost:8000/api/v1
+
+### Register a new user
+POST {{base_url}}/auth/register
+Content-Type: application/json
+
+{
+    "email": "testuser3@example.com",
+    "password": "securepassword123",
+    "name": "Test User 1",
+    "username": "testuser2"
+}
+
+### Register with duplicate email (should return 409)
+POST {{base_url}}/auth/register
+Content-Type: application/json
+
+{
+    "email": "testuser@example.com",
+    "password": "somepassword",
+    "name": "Test User",
+    "username": "testuser"
+}
+
+### Login
+POST {{base_url}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "testuser@example.com",
+    "password": "securepassword123"
+}
+
+### Login with wrong credentials (should return 401)
+POST {{base_url}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "testuser@example.com",
+    "password": "wrongpassword"
+}
+
+### Register missing fields (should return 400)
+POST {{base_url}}/auth/register
+Content-Type: application/json
+
+{
+    "email": "missing@example.com"
+}
+
+### Refresh Token
+POST {{base_url}}/auth/refresh
+# The refresh_token cookie should be sent automatically by the client if it was set in a previous call.
+
+### Logout
+POST {{base_url}}/auth/logout
+# This should revoke the token and clear the cookie.

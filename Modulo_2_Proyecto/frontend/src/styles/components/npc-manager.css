@@ -1,0 +1,773 @@
+/* ========================================
+   NPC Manager Component Styles
+   ======================================== */
+
+/* ========================================
+   Container & Layout
+   ======================================== */
+.npc-manager {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.npc-manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.npc-manager-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.npc-manager-title svg {
+  color: var(--color-cyan);
+}
+
+.npc-manager-title h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.npc-count {
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+/* ========================================
+   Filters
+   ======================================== */
+.npc-filters {
+  display: flex;
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+.npc-filter-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.npc-filter-group label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.npc-filter-select {
+  padding: var(--space-xs) var(--space-md);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  font-family: inherit;
+  cursor: pointer;
+  min-width: 140px;
+  transition: all var(--transition-fast);
+}
+
+.npc-filter-select:hover {
+  border-color: var(--color-cyan-dark);
+}
+
+.npc-filter-select:focus {
+  outline: none;
+  border-color: var(--color-cyan);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+}
+
+/* ========================================
+   Loading, Error, Empty States
+   ======================================== */
+.npc-loading,
+.npc-error,
+.npc-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3xl);
+  gap: var(--space-md);
+  text-align: center;
+}
+
+.npc-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-cyan);
+  border-radius: 50%;
+  animation: npcSpin 1s linear infinite;
+}
+
+@keyframes npcSpin {
+  to { transform: rotate(360deg); }
+}
+
+.npc-loading p,
+.npc-error p,
+.npc-empty p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+}
+
+.npc-error svg {
+  color: var(--color-error);
+}
+
+.npc-empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-full);
+  color: var(--color-text-muted);
+}
+
+.npc-empty h4 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+/* ========================================
+   NPC List & Groups
+   ======================================== */
+.npc-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.npc-type-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.npc-type-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.npc-type-icon {
+  font-size: 1.25rem;
+}
+
+.npc-type-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.npc-type-count {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.npc-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-md);
+}
+
+/* ========================================
+   NPC Card
+   ======================================== */
+.npc-card {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  transition: all var(--transition-fast);
+}
+
+.npc-card:hover {
+  border-color: var(--color-cyan-dark);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Type-specific border accents */
+.npc-card.npc-type-ally {
+  border-left: 3px solid var(--color-success);
+}
+
+.npc-card.npc-type-enemy {
+  border-left: 3px solid var(--color-error);
+}
+
+.npc-card.npc-type-neutral {
+  border-left: 3px solid var(--color-text-muted);
+}
+
+.npc-card.npc-type-boss {
+  border-left: 3px solid var(--color-warning);
+}
+
+.npc-card.npc-type-companion {
+  border-left: 3px solid var(--color-cyan);
+}
+
+.npc-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.npc-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  color: white;
+  background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-bg-elevated) 100%);
+  border: 2px solid var(--color-border);
+}
+
+.npc-avatar.npc-type-ally {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.3) 0%, var(--color-navy) 100%);
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.npc-avatar.npc-type-enemy {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, var(--color-navy) 100%);
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.npc-avatar.npc-type-neutral {
+  background: linear-gradient(135deg, rgba(100, 116, 139, 0.3) 0%, var(--color-navy) 100%);
+  border-color: var(--color-text-muted);
+  color: var(--color-text-muted);
+}
+
+.npc-avatar.npc-type-boss {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.3) 0%, var(--color-navy) 100%);
+  border-color: var(--color-warning);
+  color: var(--color-warning);
+}
+
+.npc-avatar.npc-type-companion {
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.3) 0%, var(--color-navy) 100%);
+  border-color: var(--color-cyan);
+  color: var(--color-cyan);
+}
+
+.npc-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.npc-name {
+  margin: 0 0 var(--space-xs) 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.npc-badges {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.npc-type-badge,
+.npc-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--space-sm);
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: var(--radius-sm);
+}
+
+/* Type badges */
+.npc-type-badge.npc-type-ally {
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--color-success);
+}
+
+.npc-type-badge.npc-type-enemy {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--color-error);
+}
+
+.npc-type-badge.npc-type-neutral {
+  background: rgba(100, 116, 139, 0.2);
+  color: var(--color-text-muted);
+}
+
+.npc-type-badge.npc-type-boss {
+  background: rgba(245, 158, 11, 0.2);
+  color: var(--color-warning);
+}
+
+.npc-type-badge.npc-type-companion {
+  background: rgba(34, 211, 238, 0.2);
+  color: var(--color-cyan);
+}
+
+/* Status badges */
+.npc-status-badge.npc-status-active {
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--color-success);
+}
+
+.npc-status-badge.npc-status-defeated {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--color-error);
+}
+
+.npc-status-badge.npc-status-retired {
+  background: rgba(100, 116, 139, 0.2);
+  color: var(--color-text-muted);
+}
+
+.npc-card-actions {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.npc-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.npc-action-btn:hover {
+  background: var(--color-bg-card);
+  border-color: var(--color-cyan);
+  color: var(--color-cyan);
+}
+
+.npc-delete-btn:hover {
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.npc-description {
+  margin: 0 0 var(--space-md) 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.npc-quick-stats {
+  display: flex;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-md);
+}
+
+.npc-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.npc-stat-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.npc-stat-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.npc-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+.npc-card-footer .btn {
+  font-size: 0.75rem;
+}
+
+/* ========================================
+   NPC Dice Toolbar
+   ======================================== */
+.npc-dice-toolbar {
+  display: flex;
+  gap: var(--space-xs);
+  padding: var(--space-sm) 0;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-sm);
+}
+
+.npc-dice-toolbar .dice-btn {
+  flex: 1;
+  min-width: 40px;
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.npc-dice-toolbar .dice-btn:hover:not(:disabled) {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-cyan);
+  color: var(--color-cyan);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(34, 211, 238, 0.2);
+}
+
+.npc-dice-toolbar .dice-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.npc-dice-toolbar .dice-btn.dice-btn-primary {
+  background: rgba(34, 211, 238, 0.1);
+  border-color: var(--color-cyan-dark);
+  color: var(--color-cyan);
+}
+
+.npc-dice-toolbar .dice-btn.dice-btn-primary:hover:not(:disabled) {
+  background: rgba(34, 211, 238, 0.2);
+  border-color: var(--color-cyan);
+}
+
+/* ========================================
+   NPC Form Modal
+   ======================================== */
+.npc-form-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  animation: npcFadeIn 0.25s ease-out;
+  padding: var(--space-lg);
+  overflow-y: auto;
+}
+
+.npc-form-overlay[hidden] {
+  display: none;
+}
+
+@keyframes npcFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.npc-form-modal {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: npcSlideIn 0.3s ease-out;
+  box-shadow: 
+    0 0 60px rgba(34, 211, 238, 0.15),
+    var(--shadow-lg);
+}
+
+@keyframes npcSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.npc-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: 1px solid var(--color-border);
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.05) 0%, transparent 100%);
+}
+
+.npc-form-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--color-cyan) 0%, var(--color-turquoise) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.npc-form-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.npc-form-close:hover {
+  background: var(--color-bg-elevated);
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
+
+.npc-form-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-xl);
+}
+
+.npc-form-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.npc-form-body::-webkit-scrollbar-track {
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-full);
+}
+
+.npc-form-body::-webkit-scrollbar-thumb {
+  background: var(--color-cyan-dark);
+  border-radius: var(--radius-full);
+}
+
+.npc-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.npc-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.npc-form-section-title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.npc-form-row {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.npc-form-row-2 > .npc-form-field {
+  flex: 1;
+}
+
+.npc-form-row-4 > .npc-form-field {
+  flex: 1;
+}
+
+.npc-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.npc-form-field label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.npc-form-field input,
+.npc-form-field select,
+.npc-form-field textarea {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  font-family: inherit;
+  transition: all var(--transition-fast);
+}
+
+.npc-form-field input:hover,
+.npc-form-field select:hover,
+.npc-form-field textarea:hover {
+  border-color: var(--color-cyan-dark);
+}
+
+.npc-form-field input:focus,
+.npc-form-field select:focus,
+.npc-form-field textarea:focus {
+  outline: none;
+  border-color: var(--color-cyan);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+}
+
+.npc-form-field input::placeholder,
+.npc-form-field textarea::placeholder {
+  color: var(--color-text-muted);
+}
+
+.npc-form-field textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.npc-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-md);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--color-border);
+}
+
+.npc-form-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: npcSpin 0.8s linear infinite;
+}
+
+/* ========================================
+   Responsive
+   ======================================== */
+@media (max-width: 768px) {
+  .npc-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .npc-form-row-4 {
+    flex-wrap: wrap;
+  }
+
+  .npc-form-row-4 > .npc-form-field {
+    flex: 1 1 calc(50% - var(--space-sm));
+    min-width: 100px;
+  }
+
+  .npc-filters {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .npc-filter-group {
+    width: 100%;
+  }
+
+  .npc-filter-select {
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .npc-manager-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .npc-manager-header .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .npc-form-overlay {
+    padding: var(--space-sm);
+  }
+
+  .npc-form-modal {
+    max-height: 95vh;
+  }
+
+  .npc-form-header {
+    padding: var(--space-md);
+  }
+
+  .npc-form-body {
+    padding: var(--space-md);
+  }
+
+  .npc-form-row-2 {
+    flex-direction: column;
+  }
+
+  .npc-form-row-4 > .npc-form-field {
+    flex: 1 1 100%;
+  }
+}
+

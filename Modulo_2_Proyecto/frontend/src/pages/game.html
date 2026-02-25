@@ -1,0 +1,237 @@
+<div class="game-container">
+  <div class="game-header">
+    <div class="game-header-left">
+      <a href="/dashboard" data-link class="back-link">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5"></path>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        <span>Back to Hub</span>
+      </a>
+      <div class="game-title-section">
+        <h1 id="game-name" class="game-title">Loading...</h1>
+        <div class="game-meta">
+          <span id="game-status" class="game-status-badge"></span>
+          <span id="game-role" class="game-role-badge"></span>
+        </div>
+      </div>
+    </div>
+    <div class="game-header-right">
+      <button id="leave-game-btn" class="btn btn-ghost btn-danger" hidden>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+        <span>Leave Game</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div id="game-loading" class="game-loading">
+    <span class="loader loader-lg"></span>
+    <p>Loading game...</p>
+  </div>
+
+  <!-- Error State -->
+  <div id="game-error" class="game-error" hidden>
+    <div class="error-icon">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+    </div>
+    <h2>Unable to load game</h2>
+    <p id="game-error-message">Something went wrong</p>
+    <a href="/dashboard" data-link class="btn btn-primary">Return to Hub</a>
+  </div>
+
+  <!-- Game Content -->
+  <div id="game-content" class="game-content" hidden>
+    <!-- Turn Tracker Banner -->
+    <div id="turn-banner" class="turn-banner" hidden>
+      <div class="turn-banner-content">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span id="turn-message">Waiting for turn...</span>
+      </div>
+      <button id="clear-turn-btn" class="btn btn-ghost btn-sm" hidden>End Turn Order</button>
+    </div>
+
+    <!-- Messages -->
+    <div id="game-message" class="game-message" hidden></div>
+
+
+    <!-- Chat Section -->
+    <section class="game-section chat-section">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          Game Logs
+        </h2>
+        <div class="section-header-right-actions">
+          <a id="view-notes-link" href="#" data-link class="btn btn-ghost btn-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+            <span>Game Notes</span>
+          </a>
+          <a id="view-history-link" href="#" data-link class="btn btn-ghost btn-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 8v4l3 3"></path>
+              <circle cx="12" cy="12" r="9"></circle>
+            </svg>
+            <span>View Full History</span>
+          </a>
+          <div id="chat-connection-status" class="chat-connection-status">
+            <span class="status-indicator status-disconnected"></span>
+            <span class="status-text">Disconnected</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-tabs">
+        <button class="chat-tab-btn active" data-tab="activity">Activity</button>
+        <button class="chat-tab-btn" data-tab="adventure">Adventure Log</button>
+        <button class="chat-tab-btn" data-tab="chat">Chat</button>
+      </div>
+
+      <div class="chat-container">
+        <!-- Chat Status States -->
+        <div id="chat-loading" class="chat-loading">
+          <span class="loader"></span>
+          <span>Loading messages...</span>
+        </div>
+        <div id="chat-empty" class="chat-empty" hidden>
+          <p>No messages yet. Start the adventure!</p>
+        </div>
+
+        <!-- Chat Messages -->
+        <div id="chat-messages" class="chat-messages">
+        </div>
+
+        <!-- Chat Input -->
+        <div class="chat-input-container">
+          <div class="chat-dice-toolbar">
+            <button type="button" class="dice-btn" data-dice="1d4" title="Roll 1d4">d4</button>
+            <button type="button" class="dice-btn" data-dice="1d6" title="Roll 1d6">d6</button>
+            <button type="button" class="dice-btn" data-dice="1d8" title="Roll 1d8">d8</button>
+            <button type="button" class="dice-btn" data-dice="1d10" title="Roll 1d10">d10</button>
+            <button type="button" class="dice-btn" data-dice="1d12" title="Roll 1d12">d12</button>
+            <button type="button" class="dice-btn" data-dice="1d20" title="Roll 1d20">d20</button>
+            <button type="button" class="dice-btn" data-dice="1d100" title="Roll 1d100">d100</button>
+          </div>
+          <form id="chat-form" class="chat-form">
+            <input 
+              type="text" 
+              id="chat-input" 
+              class="chat-input" 
+              placeholder="Write your message..." 
+              autocomplete="off"
+              maxlength="1000"
+            />
+            <button type="submit" id="chat-send-btn" class="btn btn-primary chat-send-btn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- DM Section - Only visible to Dungeon Master -->
+    <section id="dm-section" class="game-section dm-section" hidden>
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+            <path d="M2 17l10 5 10-5"></path>
+            <path d="M2 12l10 5 10-5"></path>
+          </svg>
+          Dungeon Master Controls
+        </h2>
+      </div>
+      <div class="dm-controls">
+        <div class="dm-control-card">
+          <h3>Invite Code</h3>
+          <div class="invite-code-display">
+            <code id="invite-code">Loading...</code>
+            <button id="copy-invite-btn" class="btn btn-ghost btn-sm" title="Copy invite code">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            </button>
+          </div>
+          <p class="dm-control-hint">Share this code with players to invite them</p>
+        </div>
+
+
+        <div class="dm-control-card dm-control-card-pending" id="pending-characters-card" hidden>
+          <div class="dm-control-card-header">
+            <h3>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              Pending Characters
+            </h3>
+            <span id="pending-count-badge" class="pending-count-badge">0</span>
+          </div>
+          <p class="dm-control-description">Review and approve player character submissions.</p>
+          <div id="pending-characters-list" class="pending-characters-list">
+            <!-- Pending characters will be rendered here -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- NPC Manager Section - Only visible to Dungeon Master -->
+    <section id="npc-section" class="game-section npc-section" hidden>
+      <div id="npc-manager-container">
+        <!-- NPC Manager component renders here -->
+      </div>
+    </section>
+
+    <!-- Players Section -->
+    <section class="game-section players-section">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          Party Members
+        </h2>
+        <span id="players-count" class="players-count"></span>
+      </div>
+      
+      <div id="players-loading" class="players-loading">
+        <span class="loader"></span>
+        <span>Loading players...</span>
+      </div>
+
+      <div id="players-list" class="players-list" hidden></div>
+    </section>
+
+
+    
+  </div>
+
+  <div class="game-decoration">
+    <div class="decoration-orb decoration-orb-1"></div>
+    <div class="decoration-orb decoration-orb-2"></div>
+  </div>
+</div>
+
+

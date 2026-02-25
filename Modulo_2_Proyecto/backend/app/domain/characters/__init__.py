@@ -1,0 +1,2 @@
+"""Characters domain package."""
+

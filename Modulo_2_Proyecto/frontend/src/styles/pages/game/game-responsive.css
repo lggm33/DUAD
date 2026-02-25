@@ -1,0 +1,103 @@
+/* ========================================
+   Responsive Design
+   Media queries for tablets and mobile devices
+   ======================================== */
+
+/* ========================================
+   Tablet & Mobile (max-width: 768px)
+   ======================================== */
+@media (max-width: 768px) {
+  .game-container {
+    padding: var(--space-md);
+  }
+
+  .game-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .game-title {
+    font-size: 1.5rem;
+  }
+
+  .game-meta {
+    flex-wrap: wrap;
+  }
+
+  .dm-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .players-list {
+    grid-template-columns: 1fr;
+  }
+
+  .character-review-modal {
+    max-width: 95%;
+    width: 95%;
+  }
+
+  .character-review-modal .modal-header,
+  .character-review-modal .modal-body,
+  .character-review-modal .modal-footer {
+    padding: var(--space-md);
+  }
+
+  .review-modal-scrollable {
+    max-height: 55vh;
+  }
+
+  .review-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .review-actions {
+    flex-direction: column;
+  }
+
+  .review-actions .btn {
+    width: 100%;
+  }
+
+  /* Turn banner responsive */
+  .turn-banner {
+    padding: var(--space-sm) var(--space-md);
+    flex-direction: column;
+    gap: var(--space-sm);
+    text-align: center;
+  }
+
+  .turn-banner-content {
+    justify-content: center;
+  }
+
+  #clear-turn-btn {
+    width: 100%;
+  }
+
+  /* Player actions responsive */
+  .player-card {
+    flex-wrap: wrap;
+  }
+
+  .player-actions {
+    width: 100%;
+    justify-content: flex-end;
+    margin-left: 0;
+    margin-top: var(--space-xs);
+  }
+}
+
+/* ========================================
+   Mobile (max-width: 640px)
+   ======================================== */
+@media (max-width: 640px) {
+  .character-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .character-stats {
+    justify-content: center;
+  }
+}

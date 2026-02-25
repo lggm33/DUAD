@@ -1,0 +1,35 @@
+# Docker Compose for local development
+# This file allows you to run the gateway with Docker while keeping
+# the backend and frontend running directly on your host machine.
+#
+# Usage:
+#   cd gateway && docker compose -f docker-compose.dev.yml up --build
+#
+# Prerequisites:
+#   - Backend running on localhost:8000
+#   - Frontend (Vite) running on localhost:5173
+
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      # host.docker.internal resolves to the host machine from inside Docker
+      # This works on macOS and Windows. For Linux, see README.
+      FRONTEND_UPSTREAM: http://host.docker.internal:5173
+      BACKEND_UPSTREAM: http://host.docker.internal:8000
+    # Enables host.docker.internal on Linux (Docker 20.10+)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+

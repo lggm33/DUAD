@@ -1,0 +1,27 @@
+/* ========================================
+   Game Page Styles - Modular Structure
+   
+   This file has been refactored into smaller, 
+   maintainable modules (max 500 lines each)
+   ======================================== */
+
+/* Base layout and structure */
+@import './game/game-layout.css';
+
+/* Turn tracking system and messages */
+@import './game/game-turn-system.css';
+
+/* Players management and display */
+@import './game/game-players.css';
+
+/* Character system and status */
+@import './game/game-character.css';
+
+/* Modal overlays and dialogs */
+@import './game/game-modals.css';
+
+/* Character review modal */
+@import './game/game-character-review-modal.css';
+
+/* Responsive design (must be last) */
+@import './game/game-responsive.css';

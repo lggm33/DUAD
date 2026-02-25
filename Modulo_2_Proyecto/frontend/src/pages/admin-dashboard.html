@@ -1,0 +1,127 @@
+<div class="admin-dashboard-container">
+  <div class="admin-header">
+    <div class="admin-title-section">
+      <h1 class="admin-title">Admin Dashboard</h1>
+      <p class="admin-subtitle">Manage all game sessions and users</p>
+    </div>
+    <button id="back-to-dashboard" class="btn btn-ghost">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      <span>Back to Dashboard</span>
+    </button>
+  </div>
+
+  <div class="admin-content">
+    <!-- Filtros -->
+    <section class="admin-filters-section">
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label for="filter-status" class="filter-label">Status</label>
+          <select id="filter-status" class="form-select">
+            <option value="">All Status</option>
+            <option value="ACTIVE">Active</option>
+            <option value="ENDED">Ended</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label for="filter-user" class="filter-label">User (DM or Player)</label>
+          <select id="filter-user" class="form-select">
+            <option value="">All Users</option>
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label for="filter-search" class="filter-label">Search Game Name</label>
+          <div class="search-input-wrapper">
+            <input type="text" id="filter-search" class="form-input" placeholder="Search by name..."/>
+            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mensajes -->
+    <div id="admin-message" class="admin-message" hidden></div>
+
+    <!-- Tabla de partidas -->
+    <section class="admin-games-section">
+      <div class="section-header">
+        <h2 class="section-title">Game Sessions</h2>
+        <span id="games-count" class="games-count">0 games found</span>
+      </div>
+
+      <div id="games-loading" class="games-loading">
+        <span class="loader loader-lg"></span>
+        <p>Loading game sessions...</p>
+      </div>
+
+      <div id="games-empty" class="games-empty" hidden>
+        <div class="empty-icon">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+        </div>
+        <h3>No Games Found</h3>
+        <p>Try adjusting your filters to find what you're looking for.</p>
+      </div>
+
+      <div id="games-table-wrapper" class="table-wrapper" hidden>
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Game Name</th>
+              <th>Dungeon Master</th>
+              <th>Players</th>
+              <th>Status</th>
+              <th>Created At</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="games-tbody">
+            <!-- Populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal de jugadores -->
+  <div id="players-modal" class="modal" hidden>
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h3 id="modal-title" class="modal-title">Game Members</h3>
+          <p id="modal-subtitle" class="modal-subtitle"></p>
+        </div>
+        <button class="modal-close-btn" id="close-players-modal">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="players-list-loading" class="players-loading" hidden>
+          <span class="loader"></span>
+        </div>
+        <div id="players-list" class="players-list">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-decoration">
+    <div class="decoration-orb decoration-orb-1"></div>
+    <div class="decoration-orb decoration-orb-2"></div>
+  </div>
+</div>

@@ -1,0 +1,9 @@
+### User API Endpoints Test
+
+@base_url = http://localhost:8000/api/v1
+# Paste the access_token here after logging in
+@access_token = YOUR_ACCESS_TOKEN_HERE
+
+### Get current user information
+GET {{base_url}}/users/me
+Authorization: Bearer {{access_token}}
